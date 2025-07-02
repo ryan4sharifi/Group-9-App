@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import HomePage from './pages/HomePage';
+import EventsPage from './pages/EventsPage';
 import Navbar from './components/layout/Navbar';
 
 import { UserProvider, useUser } from './context/UserContext';
@@ -32,6 +33,7 @@ const AppRoutes = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/events" element={<EventsPage />} /> {/* chane this to admin only later when roles are added*/}
         <Route path="/profile" element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" />} />
       </Routes>
     </>
