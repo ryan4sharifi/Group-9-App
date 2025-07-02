@@ -1,6 +1,15 @@
 import React from 'react';
 import { Box, Container, Typography, Button, Paper, useTheme, Stack } from '@mui/material';
-import { PeopleAlt, Event, Assignment, VolunteerActivism } from '@mui/icons-material';
+import {
+  PeopleAlt,
+  Event,
+  Assignment,
+  Notifications,
+  BarChart,
+  History,
+  EventAvailable
+} from '@mui/icons-material';
+
 import { Link } from 'react-router-dom';
 
 const HomePage: React.FC = () => {
@@ -26,10 +35,28 @@ const HomePage: React.FC = () => {
       link: "/tasks"
     },
     {
-      icon: <VolunteerActivism fontSize="large" color="primary" />,
-      title: "Impact Tracking",
-      description: "Measure and report on volunteer contributions",
-      link: "/impact"
+      icon: <Notifications fontSize="large" color="primary" />,
+      title: "Notifications",
+      description: "Stay updated with real-time notifications and alerts",
+      link: "/"
+    },
+    {
+      icon: <BarChart fontSize="large" color="primary" />,
+      title: "Analytics & Reporting",
+      description: "Deep insights into volunteer activities and program success",
+      link: "/report"
+    },
+    {
+      icon: <History fontSize="large" color="primary" />,
+      title: "History",
+      description: "View past volunteer activities and contributions",
+      link: "/"
+    },
+    {
+      icon: <EventAvailable fontSize="large" color="primary" />, 
+      title: "Matched Events",
+      description: "Find events that match your skills and interests",
+      link: "/report"
     }
   ];
 
