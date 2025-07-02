@@ -7,6 +7,8 @@ import ProfilePage from './pages/ProfilePage';
 import HomePage from './pages/HomePage';
 import EventsPage from './pages/EventsPage';
 import ReportPage from './pages/ReportPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 import Navbar from './components/layout/Navbar';
 
 import { UserProvider, useUser } from './context/UserContext';
@@ -37,6 +39,9 @@ const AppRoutes = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/events" element={<EventsPage />} /> 
         <Route path="/report" element={<ReportPage />}/>
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        {/* Protected routes */}
         <Route path="/profile" element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" />} />
       </Routes>
     </>
