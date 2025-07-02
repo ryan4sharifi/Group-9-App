@@ -1,0 +1,253 @@
+// src/pages/ProfilePage.tsx
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  Box, Typography, Alert, Container, Snackbar,
+  useMediaQuery, useTheme, CircularProgress,
+  Card, CardContent, Paper, Divider
+} from "@mui/material";
+import {
+  Save as SaveIcon,
+  Delete as DeleteIcon,
+  Person as PersonIcon,
+  BusinessCenter as BusinessIcon
+} from "@mui/icons-material";
+import Grid from "@mui/material/Grid";
+import InputField from "../components/inputs/InputField";
+import MultiInputField from "../components/inputs/MultiInputField";
+import SubmitButton from "../components/buttons/SubmitButton";
+import ConfirmDialog from "../components/common/ConfirmDialog";
+import { useUser } from "../context/UserContext";
+
+interface FormData {
+  full_name?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  email?: string;
+  preferences?: string;
+  skills: string[];
+  availability?: string;
+}
+
+const ProfilePage: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { userId, setUserId } = useUser();
+
+  const [formData, setFormData] = useState<FormData>({
+    full_name: "",
+    address1: "",
+    address2: "",
+    city: "",
+    state: "",
+    zip_code: "",
+    email: "",
+    preferences: "",
+    skills: [],
+    availability: "",
+  });
+
+  const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleDateString());
+  const [status, setStatus] = useState({ loading: false, error: "", success: "" });
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const stringFields: (keyof FormData)[] = [
+    "full_name", "address1", "address2", "city", "state", "zip_code", "preferences"
+  ];
+
+  useEffect(() => {
+    const storedId = sessionStorage.getItem("user_id");
+    if (storedId) setUserId(storedId);
+  }, [setUserId]);
+
+  useEffect(() => {
+    if (!userId || userId === "undefined") return;
+
+    const fetchProfile = async () => {
+      setStatus(prev => ({ ...prev, loading: true }));
+      try {
+        const profileRes = await axios.get(`http://localhost:8000/api/profile/${userId}`);
+        setFormData(prev => ({ ...prev, ...profileRes.data }));
+        if (profileRes.data.updated_at) {
+          setLastUpdated(new Date(profileRes.data.updated_at).toLocaleDateString());
+        }
+      } catch {
+        try {
+          const credsRes = await axios.get(`http://localhost:8000/auth/user/${userId}`);
+          setFormData(prev => ({
+            ...prev,
+            email: prev.email || credsRes.data.email,
+          }));
+        } catch {
+          setStatus(prev => ({ ...prev, error: "Failed to load user email." }));
+        }
+      } finally {
+        setStatus(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchProfile();
+  }, [userId]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleArrayChange = (name: string, values: string[]) => {
+    setFormData(prev => ({ ...prev, [name]: values }));
+  };
+
+  const handleSubmit = async () => {
+    setStatus({ loading: true, error: "", success: "" });
+    try {
+      const { email, ...rest } = formData;
+      const postData = Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== ""));
+      const res = await axios.post(`http://localhost:8000/api/profile/${userId}`, postData);
+      setLastUpdated(new Date().toLocaleDateString());
+      setStatus({ loading: false, error: "", success: res.data.message || "Profile updated successfully" });
+    } catch {
+      setStatus({ loading: false, error: "Failed to update profile", success: "" });
+    } finally {
+      setOpenSnackbar(true);
+    }
+  };
+
+  const handleDelete = () => setDeleteConfirmOpen(true);
+
+  const confirmDelete = async () => {
+    setDeleteConfirmOpen(false);
+    setStatus(prev => ({ ...prev, loading: true }));
+    try {
+      await axios.delete(`http://localhost:8000/api/profile/${userId}`);
+      sessionStorage.clear();
+      setUserId(null);
+      setStatus({ loading: false, error: "", success: "Profile deleted" });
+      setTimeout(() => (window.location.href = "/login"), 2000);
+    } catch {
+      setStatus({ loading: false, error: "Delete failed", success: "" });
+    } finally {
+      setOpenSnackbar(true);
+    }
+  };
+
+  return (
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Box mb={4} display="flex" alignItems="center" gap={2}>
+        <PersonIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />
+        <Typography variant="h4" fontWeight="500" color="text.primary">Your Profile</Typography>
+      </Box>
+
+      {status.loading && !formData.email ? (
+        <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
+      ) : (
+        <Grid container spacing={3}>
+          <Grid size={12}>
+            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, background: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[50] }}>
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <BusinessIcon color="primary" />
+                <Typography variant="h6" color="text.primary">Account Information</Typography>
+              </Box>
+              <Divider sx={{ mb: 2 }} />
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Typography variant="subtitle2" color="text.secondary">Email Address</Typography>
+                  <Typography variant="body1" fontWeight="medium" mb={1}>{formData.email || "Not available"}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Typography variant="subtitle2" color="text.secondary">Last Updated</Typography>
+                  <Typography variant="body1" fontWeight="medium">{lastUpdated}</Typography>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
+
+          <Grid size={12}>
+            <Card elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+              <Box sx={{ bgcolor: theme.palette.primary.main, color: 'white', py: 2, px: 3 }}>
+                <Typography variant="h6">Personal Details</Typography>
+              </Box>
+              <CardContent sx={{ p: 3 }}>
+                <Grid container spacing={3}>
+                  {stringFields.map((field) => (
+                    <Grid size={{ xs: 12, sm: field === "preferences" ? 12 : 6 }} key={field}>
+                      <InputField
+                        name={field}
+                        label={field.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+                        value={(formData[field] ?? "") as string}
+                        onChange={handleChange}
+                        fullWidth
+                      />
+                    </Grid>
+                  ))}
+                  <Grid size={12}>
+                    <MultiInputField
+                      label="Your Skills"
+                      name="skills"
+                      value={formData.skills}
+                      onChange={handleArrayChange}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <InputField
+                      label="Availability"
+                      name="availability"
+                      value={formData.availability || ""}
+                      onChange={handleChange}
+                      type="date"
+                      fullWidth
+                      
+                    />
+                  </Grid>
+                </Grid>
+                <Box mt={4} display="flex" gap={2} flexDirection={isMobile ? 'column' : 'row'} justifyContent="space-between">
+                  <SubmitButton
+                    label="Save Profile"
+                    onClick={handleSubmit}
+                    disabled={status.loading}
+                    startIcon={<SaveIcon />}
+                    sx={{ flex: 3, py: 1.2 }}
+                  />
+                  <SubmitButton
+                    label="Delete Profile"
+                    onClick={handleDelete}
+                    variant="outlined"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    disabled={status.loading}
+                    sx={{ flex: 1, py: 1.2 }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={4000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={status.error ? "error" : "success"} variant="filled" sx={{ width: '100%' }}>
+          {status.error || status.success}
+        </Alert>
+      </Snackbar>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Delete Your Profile"
+        description="Are you sure you want to permanently delete your profile? This action cannot be undone."
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={confirmDelete}
+      />
+    </Container>
+  );
+};
+
+export default ProfilePage;
