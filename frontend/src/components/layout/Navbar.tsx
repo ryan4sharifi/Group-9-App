@@ -12,6 +12,7 @@ import {
   Home as HomeIcon, KeyboardArrowRight as ArrowIcon, History as HistoryIcon,
 } from '@mui/icons-material';
 import { useUser } from '../../context/UserContext';
+import NotificationBell from './NotificationBell'; //NTran
 
 interface NavItem {
   label: string;
@@ -122,6 +123,12 @@ const Navbar: React.FC = () => {
           </ListItemButton>
         ))}
       </List>
+      {/* NTran: Added NotificationBell component for mobile drawer */}
+      {isLoggedIn && (
+        <Box sx={{ px: 2, py: 1, display: 'flex', justifyContent: 'center' }}>
+          <NotificationBell />
+        </Box>
+      )}
               {isLoggedIn && (
         <Box sx={{ p: 2, mt: 'auto' }}>
                 <Button
@@ -177,6 +184,8 @@ const Navbar: React.FC = () => {
           {/* Mobile menu button */}
           {isMobile ? (
             <>
+              {/* NTran: Added NotificationBell for mobile view before menu button */}
+              {isLoggedIn && <NotificationBell />}
               <IconButton
                 onClick={() => setDrawerOpen(true)}
                 sx={{ borderRadius: 1.5, p: 1 }}
@@ -214,6 +223,8 @@ const Navbar: React.FC = () => {
                   {badge && <Chip size="small" label={badge} color="primary" sx={{ ml: 0.5, height: 20 }} />}
                 </Button>
               ))}
+              {/* NTran: Added NotificationBell component for desktop navigation */}
+              {isLoggedIn && <NotificationBell />}
               {isLoggedIn && (
                 <Button
                   onClick={handleLogout}

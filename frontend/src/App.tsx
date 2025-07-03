@@ -10,6 +10,8 @@ import ReportPage from './pages/ReportPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import Navbar from './components/layout/Navbar';
+import NotificationsPage from './pages/NotificationsPage';
+import VolunteerHistoryPage from './pages/VolunteerHistoryPage';
 
 import { UserProvider, useUser } from './context/UserContext';
 
@@ -41,6 +43,8 @@ const AppRoutes = () => {
         <Route path="/report" element={<ReportPage />}/>
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/history" element={isLoggedIn ? <VolunteerHistoryPage /> : <Navigate to="/login" />} />
+        <Route path="/notifications" element={isLoggedIn ? <NotificationsPage /> : <Navigate to="/login" />} />
         {/* Protected routes */}
         <Route path="/profile" element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" />} />
       </Routes>
