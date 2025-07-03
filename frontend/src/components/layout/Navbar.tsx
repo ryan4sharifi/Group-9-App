@@ -59,15 +59,15 @@ const Navbar: React.FC = () => {
     return role === 'admin' ? [
       // { label: 'Create Event', path: '/event-form', icon: <EventIcon /> },
       // { label: 'Reports', path: '/reports', icon: <AssessmentIcon /> },
-      // { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon /> },
-      // { label: 'History', path: '/history', icon: <HistoryIcon /> },
+      { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon /> },
+      { label: 'History', path: '/history', icon: <HistoryIcon /> },
       { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
     ] : [
       { label: 'Home', path: '/', icon: <HomeIcon /> },
       { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
       // { label: 'Events', path: '/match', icon: <EventIcon /> },
-      // { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon /> },
-      // { label: 'History', path: '/history', icon: <HistoryIcon /> },
+      { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon /> },
+      { label: 'History', path: '/history', icon: <HistoryIcon /> },
     ];
   };
 
