@@ -59,3 +59,12 @@ async def delete_profile(user_id: str):
         return {"message": "Profile deleted", "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete profile: {str(e)}")
+    
+@router.get("/volunteers")
+async def get_all_volunteers():
+    """Get all volunteers for admin matching interface"""
+    try:
+        response = supabase.table("user_profiles").select("user_id, full_name, skills, email").execute()
+        return response.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch volunteers: {str(e)}")

@@ -13,11 +13,12 @@ import ContactPage from './pages/ContactPage';
 import Navbar from './components/layout/Navbar';
 import NotificationsPage from './pages/NotificationsPage';
 import VolunteerHistoryPage from './pages/VolunteerHistoryPage';
+import AdminVolunteerMatchingPage from './pages/AdminVolunteerMatchingPage';
 
 import { UserProvider, useUser } from './context/UserContext';
 
 const AppRoutes = () => {
-  const { userId, setUserId } = useUser();
+  const { userId, role, setUserId } = useUser();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,6 +42,7 @@ const AppRoutes = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/events" element={<EventsPage />} /> 
         <Route path="/match" element={isLoggedIn ? <VolunteerMatchingPage /> : <Navigate to="/login" />} />
+        <Route path="/admin-matching" element={isLoggedIn && role === 'admin' ? <AdminVolunteerMatchingPage /> : <Navigate to="/login" />} />
         <Route path="/report" element={<ReportPage />}/>
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />

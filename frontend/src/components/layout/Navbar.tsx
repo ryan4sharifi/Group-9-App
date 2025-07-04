@@ -10,6 +10,7 @@ import {
   NotificationsNone as NotificationsIcon, Assessment as AssessmentIcon,
   Login as LoginIcon, HowToReg as RegisterIcon, Logout as LogoutIcon,
   Home as HomeIcon, KeyboardArrowRight as ArrowIcon, History as HistoryIcon,
+  Assignment as AssignmentIcon,
 } from '@mui/icons-material';
 import { useUser } from '../../context/UserContext';
 import NotificationBell from './NotificationBell'; //NTran
@@ -59,6 +60,7 @@ const Navbar: React.FC = () => {
     return role === 'admin' ? [
       // { label: 'Create Event', path: '/event-form', icon: <EventIcon /> },
       // { label: 'Reports', path: '/reports', icon: <AssessmentIcon /> },
+      { label: 'Match Volunteers', path: '/admin-matching', icon: <AssignmentIcon /> },
       { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon /> },
       { label: 'History', path: '/history', icon: <HistoryIcon /> },
       { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
