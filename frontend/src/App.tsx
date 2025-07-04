@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import HomePage from './pages/HomePage';
 import EventsPage from './pages/EventsPage';
+import VolunteerMatchingPage from './pages/VolunteerMatchingPage';
 import ReportPage from './pages/ReportPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
@@ -31,7 +32,6 @@ const AppRoutes = () => {
 
   if (loading) return null;
   
-  //retrict access to certain pages based on login status and authority,didnt add so we dont have to log in everytime
   return (
     <>
       <Navbar />
@@ -40,6 +40,7 @@ const AppRoutes = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/events" element={<EventsPage />} /> 
+        <Route path="/match" element={isLoggedIn ? <VolunteerMatchingPage /> : <Navigate to="/login" />} />
         <Route path="/report" element={<ReportPage />}/>
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />

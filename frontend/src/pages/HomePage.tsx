@@ -20,7 +20,7 @@ const HomePage: React.FC = () => {
       icon: <PeopleAlt fontSize="large" color="primary" />,
       title: "Volunteer Management",
       description: "Register, track, and manage volunteers effortlessly",
-      link: "/volunteers"
+      link: "/profile"
     },
     {
       icon: <Event fontSize="large" color="primary" />,
@@ -32,7 +32,7 @@ const HomePage: React.FC = () => {
       icon: <Assignment fontSize="large" color="primary" />,
       title: "Task Assignment",
       description: "Assign and monitor tasks for better productivity",
-      link: "/tasks"
+      link: "/match"
     },
     {
       icon: <Notifications fontSize="large" color="primary" />,
@@ -56,7 +56,7 @@ const HomePage: React.FC = () => {
       icon: <EventAvailable fontSize="large" color="primary" />, 
       title: "Matched Events",
       description: "Find events that match your skills and interests",
-      link: "/report"
+      link: "/match"
     }
   ];
 

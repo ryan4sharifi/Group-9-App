@@ -66,6 +66,7 @@ const Navbar: React.FC = () => {
       { label: 'Home', path: '/', icon: <HomeIcon /> },
       { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
       // { label: 'Events', path: '/match', icon: <EventIcon /> },
+      { label: 'Find Matches', path: '/match', icon: <EventIcon /> },
       { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon /> },
       { label: 'History', path: '/history', icon: <HistoryIcon /> },
     ];
