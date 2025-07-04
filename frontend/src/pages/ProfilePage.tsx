@@ -4,7 +4,7 @@ import axios from "axios";
 import {
   Box, Typography, Alert, Container, Snackbar,
   useMediaQuery, useTheme, CircularProgress,
-  Card, CardContent, Paper, Divider
+  Card, CardContent, Paper, Divider, FormControl, InputLabel, Select, MenuItem
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -57,6 +57,59 @@ const ProfilePage: React.FC = () => {
 
   const stringFields: (keyof FormData)[] = [
     "full_name", "address1", "address2", "city", "state", "zip_code", "preferences"
+  ];
+
+  const stateOptions = [
+    { code: 'AL', name: 'Alabama' },
+    { code: 'AK', name: 'Alaska' },
+    { code: 'AZ', name: 'Arizona' },
+    { code: 'AR', name: 'Arkansas' },
+    { code: 'CA', name: 'California' },
+    { code: 'CO', name: 'Colorado' },
+    { code: 'CT', name: 'Connecticut' },
+    { code: 'DE', name: 'Delaware' },
+    { code: 'FL', name: 'Florida' },
+    { code: 'GA', name: 'Georgia' },
+    { code: 'HI', name: 'Hawaii' },
+    { code: 'ID', name: 'Idaho' },
+    { code: 'IL', name: 'Illinois' },
+    { code: 'IN', name: 'Indiana' },
+    { code: 'IA', name: 'Iowa' },
+    { code: 'KS', name: 'Kansas' },
+    { code: 'KY', name: 'Kentucky' },
+    { code: 'LA', name: 'Louisiana' },
+    { code: 'ME', name: 'Maine' },
+    { code: 'MD', name: 'Maryland' },
+    { code: 'MA', name: 'Massachusetts' },
+    { code: 'MI', name: 'Michigan' },
+    { code: 'MN', name: 'Minnesota' },
+    { code: 'MS', name: 'Mississippi' },
+    { code: 'MO', name: 'Missouri' },
+    { code: 'MT', name: 'Montana' },
+    { code: 'NE', name: 'Nebraska' },
+    { code: 'NV', name: 'Nevada' },
+    { code: 'NH', name: 'New Hampshire' },
+    { code: 'NJ', name: 'New Jersey' },
+    { code: 'NM', name: 'New Mexico' },
+    { code: 'NY', name: 'New York' },
+    { code: 'NC', name: 'North Carolina' },
+    { code: 'ND', name: 'North Dakota' },
+    { code: 'OH', name: 'Ohio' },
+    { code: 'OK', name: 'Oklahoma' },
+    { code: 'OR', name: 'Oregon' },
+    { code: 'PA', name: 'Pennsylvania' },
+    { code: 'RI', name: 'Rhode Island' },
+    { code: 'SC', name: 'South Carolina' },
+    { code: 'SD', name: 'South Dakota' },
+    { code: 'TN', name: 'Tennessee' },
+    { code: 'TX', name: 'Texas' },
+    { code: 'UT', name: 'Utah' },
+    { code: 'VT', name: 'Vermont' },
+    { code: 'VA', name: 'Virginia' },
+    { code: 'WA', name: 'Washington' },
+    { code: 'WV', name: 'West Virginia' },
+    { code: 'WI', name: 'Wisconsin' },
+    { code: 'WY', name: 'Wyoming' },
   ];
 
   useEffect(() => {
@@ -202,6 +255,24 @@ const ProfilePage: React.FC = () => {
                       fullWidth
                       
                     />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControl fullWidth>
+                      <InputLabel>State</InputLabel>
+                      <Select
+                        name="state"
+                        value={formData.state || ""}
+                        onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
+                        label="State"
+                        required
+                      >
+                        {stateOptions.map((state) => (
+                          <MenuItem key={state.code} value={state.code}>
+                            {state.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </Grid>
                 </Grid>
                 <Box mt={4} display="flex" gap={2} flexDirection={isMobile ? 'column' : 'row'} justifyContent="space-between">
