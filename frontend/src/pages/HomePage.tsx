@@ -38,7 +38,7 @@ const HomePage: React.FC = () => {
       icon: <Notifications fontSize="large" color="primary" />,
       title: "Notifications",
       description: "Stay updated with real-time notifications and alerts",
-      link: "/"
+      link: "/notifications"
     },
     {
       icon: <BarChart fontSize="large" color="primary" />,
@@ -50,7 +50,7 @@ const HomePage: React.FC = () => {
       icon: <History fontSize="large" color="primary" />,
       title: "History",
       description: "View past volunteer activities and contributions",
-      link: "/"
+      link: "/history"
     },
     {
       icon: <EventAvailable fontSize="large" color="primary" />, 
