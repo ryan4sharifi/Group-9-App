@@ -1,3 +1,5 @@
+# Notification Routes – Create, fetch, update, and delete user notifications
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
@@ -5,13 +7,15 @@ from app.supabase_client import supabase
 
 router = APIRouter()
 
+# Notification schema for input validation
 class Notification(BaseModel):
     user_id: str
     message: str
-    is_read: Optional[bool] = False
-    type: Optional[str] = "match"  
-    event_id: Optional[str] = None
+    is_read: Optional[bool] = False  # Default to unread
+    type: Optional[str] = "match"    # Optional type (e.g., match, reminder)
+    event_id: Optional[str] = None   # Can link to an event if needed
 
+# Send a new notification to a user
 @router.post("/notifications")
 async def send_notification(notification: Notification):
     try:
@@ -20,6 +24,7 @@ async def send_notification(notification: Notification):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Fetch all notifications for a specific user
 @router.get("/notifications/{user_id}")
 async def get_user_notifications(user_id: str):
     try:
@@ -32,6 +37,7 @@ async def get_user_notifications(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Mark a single notification as read
 @router.put("/notifications/{notification_id}/read")
 async def mark_notification_as_read(notification_id: str):
     try:
@@ -43,6 +49,7 @@ async def mark_notification_as_read(notification_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Delete a specific notification
 @router.delete("/notifications/{notification_id}")
 async def delete_notification(notification_id: str):
     try:

@@ -1,4 +1,4 @@
-// src/pages/ProfilePage.tsx
+// ProfilePage component displays and manages user profile information
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -19,6 +19,7 @@ import SubmitButton from "../components/buttons/SubmitButton";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import { useUser } from "../context/UserContext";
 
+// Define expected structure of form data
 interface FormData {
   full_name?: string;
   address1?: string;
@@ -37,6 +38,7 @@ const ProfilePage: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { userId, setUserId } = useUser();
 
+  // Profile form state
   const [formData, setFormData] = useState<FormData>({
     full_name: "",
     address1: "",
@@ -55,10 +57,12 @@ const ProfilePage: React.FC = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
+  // Fields that accept plain string values
   const stringFields: (keyof FormData)[] = [
     "full_name", "address1", "address2", "city", "state", "zip_code", "preferences"
   ];
 
+  // US state dropdown options
   const stateOptions = [
     { code: 'AL', name: 'Alabama' },
     { code: 'AK', name: 'Alaska' },
@@ -112,11 +116,13 @@ const ProfilePage: React.FC = () => {
     { code: 'WY', name: 'Wyoming' },
   ];
 
+  // Restore user ID from sessionStorage if needed
   useEffect(() => {
     const storedId = sessionStorage.getItem("user_id");
     if (storedId) setUserId(storedId);
   }, [setUserId]);
 
+  // Fetch user profile info from API
   useEffect(() => {
     if (!userId || userId === "undefined") return;
 
@@ -129,6 +135,7 @@ const ProfilePage: React.FC = () => {
           setLastUpdated(new Date(profileRes.data.updated_at).toLocaleDateString());
         }
       } catch {
+        // Fallback: Try to fetch just user credentials
         try {
           const credsRes = await axios.get(`http://localhost:8000/auth/user/${userId}`);
           setFormData(prev => ({
@@ -146,15 +153,18 @@ const ProfilePage: React.FC = () => {
     fetchProfile();
   }, [userId]);
 
+  // Handle string field updates
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Handle multi-input updates (e.g. skills)
   const handleArrayChange = (name: string, values: string[]) => {
     setFormData(prev => ({ ...prev, [name]: values }));
   };
 
+  // Save profile to backend
   const handleSubmit = async () => {
     setStatus({ loading: true, error: "", success: "" });
     try {
@@ -170,8 +180,10 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  // Trigger confirmation for profile deletion
   const handleDelete = () => setDeleteConfirmOpen(true);
 
+  // Confirm and delete profile
   const confirmDelete = async () => {
     setDeleteConfirmOpen(false);
     setStatus(prev => ({ ...prev, loading: true }));
@@ -190,15 +202,18 @@ const ProfilePage: React.FC = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
+      {/* Page header */}
       <Box mb={4} display="flex" alignItems="center" gap={2}>
         <PersonIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />
         <Typography variant="h4" fontWeight="500" color="text.primary">Your Profile</Typography>
       </Box>
 
+      {/* Loading spinner while fetching */}
       {status.loading && !formData.email ? (
         <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
       ) : (
         <Grid container spacing={3}>
+          {/* Account summary card */}
           <Grid size={12}>
             <Paper elevation={2} sx={{ p: 3, borderRadius: 2, background: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[50] }}>
               <Box display="flex" alignItems="center" gap={1} mb={2}>
@@ -219,6 +234,7 @@ const ProfilePage: React.FC = () => {
             </Paper>
           </Grid>
 
+          {/* Full editable form */}
           <Grid size={12}>
             <Card elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
               <Box sx={{ bgcolor: theme.palette.primary.main, color: 'white', py: 2, px: 3 }}>
@@ -226,6 +242,7 @@ const ProfilePage: React.FC = () => {
               </Box>
               <CardContent sx={{ p: 3 }}>
                 <Grid container spacing={3}>
+                  {/* Dynamic text fields */}
                   {stringFields.map((field) => (
                     <Grid size={{ xs: 12, sm: field === "preferences" ? 12 : 6 }} key={field}>
                       <InputField
@@ -237,6 +254,8 @@ const ProfilePage: React.FC = () => {
                       />
                     </Grid>
                   ))}
+
+                  {/* Skill selection */}
                   <Grid size={12}>
                     <MultiInputField
                       label="Your Skills"
@@ -245,6 +264,8 @@ const ProfilePage: React.FC = () => {
                       onChange={handleArrayChange}
                     />
                   </Grid>
+
+                  {/* Date + State dropdown */}
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <InputField
                       label="Availability"
@@ -253,7 +274,6 @@ const ProfilePage: React.FC = () => {
                       onChange={handleChange}
                       type="date"
                       fullWidth
-                      
                     />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
@@ -275,6 +295,8 @@ const ProfilePage: React.FC = () => {
                     </FormControl>
                   </Grid>
                 </Grid>
+
+                {/* Save/Delete buttons */}
                 <Box mt={4} display="flex" gap={2} flexDirection={isMobile ? 'column' : 'row'} justifyContent="space-between">
                   <SubmitButton
                     label="Save Profile"
@@ -299,6 +321,7 @@ const ProfilePage: React.FC = () => {
         </Grid>
       )}
 
+      {/* Feedback snackbar */}
       <Snackbar
         open={openSnackbar}
         autoHideDuration={4000}
@@ -310,6 +333,7 @@ const ProfilePage: React.FC = () => {
         </Alert>
       </Snackbar>
 
+      {/* Confirm deletion modal */}
       <ConfirmDialog
         open={deleteConfirmOpen}
         title="Delete Your Profile"

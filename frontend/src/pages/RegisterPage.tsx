@@ -20,26 +20,33 @@ import SubmitButton from "../components/buttons/SubmitButton";
 import FormWrapper from "../components/form/FormWrapper";
 import { useUser } from "../context/UserContext";
 
+// Register page component
 const RegisterPage = () => {
+  // Form state for email, password, and user role
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role: "volunteer",
+    role: "volunteer", // default role
   });
+
   const [error, setError] = useState<string | string[] | null>(null);
   const navigate = useNavigate();
-  const { setUserId, setRole } = useUser();
+  const { setUserId, setRole } = useUser(); // Context setters for session
 
+  // Handle text input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Handle role dropdown change
   const handleRoleChange = (e: SelectChangeEvent<string>) => {
     setFormData({ ...formData, role: e.target.value });
   };
 
+  // Handle form submission
   const handleSubmit = async () => {
     try {
+      // Register user with backend
       const res = await axios.post("http://localhost:8000/auth/register", {
         email: formData.email,
         password: formData.password,
@@ -49,18 +56,21 @@ const RegisterPage = () => {
       const userId = res.data.id;
       const role = res.data.role;
 
+      // Store user info in sessionStorage and global context
       sessionStorage.setItem("user_id", userId);
       sessionStorage.setItem("role", role);
       setUserId(userId);
       setRole(role);
 
+      // Create empty profile after registration
       await axios.post(`http://localhost:8000/api/profile/${userId}`, {});
 
       setError(null);
-      navigate("/profile");
+      navigate("/profile"); // Redirect to profile page
     } catch (err: any) {
       const detail = err.response?.data?.detail;
 
+      // Show field-specific or general error
       if (Array.isArray(detail)) {
         const messages = detail.map((e: any) => {
           if (e.loc?.includes("password") && e.msg.includes("at least 6 characters")) {
@@ -78,6 +88,7 @@ const RegisterPage = () => {
   return (
     <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
       <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+        {/* Title and subtitle */}
         <Typography variant="h4" fontWeight="500" color="primary" align="center" gutterBottom>
           Create Account
         </Typography>
@@ -86,55 +97,66 @@ const RegisterPage = () => {
         </Typography>
         <Divider sx={{ mb: 4 }} />
 
+        {/* Form fields */}
         <Stack spacing={3}>
-      <InputField
-        name="email"
+          <InputField
+            name="email"
             label="Email Address"
-        type="email"
-        value={formData.email}
-        onChange={handleInputChange}
-      />
+            type="email"
+            value={formData.email}
+            onChange={handleInputChange}
+          />
 
-      <InputField
-        name="password"
-        label="Password"
-        type="password"
-        value={formData.password}
-        onChange={handleInputChange}
-      />
+          <InputField
+            name="password"
+            label="Password"
+            type="password"
+            value={formData.password}
+            onChange={handleInputChange}
+          />
 
+          {/* Role selection */}
           <FormControl fullWidth>
             <InputLabel id="role-label">Select Role</InputLabel>
-        <Select
-          labelId="role-label"
-          name="role"
-          value={formData.role}
+            <Select
+              labelId="role-label"
+              name="role"
+              value={formData.role}
               label="Select Role"
-          onChange={handleRoleChange}
-        >
-          <MenuItem value="volunteer">Volunteer</MenuItem>
+              onChange={handleRoleChange}
+            >
+              <MenuItem value="volunteer">Volunteer</MenuItem>
               <MenuItem value="admin">Administrator</MenuItem>
-        </Select>
-      </FormControl>
+            </Select>
+          </FormControl>
 
-      {error && (
+          {/* Error messages */}
+          {error && (
             <Alert severity="error" variant="filled">
-          {Array.isArray(error)
-            ? error.map((msg, i) => <div key={i}>{msg}</div>)
-            : error}
-        </Alert>
-      )}
+              {Array.isArray(error)
+                ? error.map((msg, i) => <div key={i}>{msg}</div>)
+                : error}
+            </Alert>
+          )}
 
-      <Box mt={2}>
+          {/* Submit button */}
+          <Box mt={2}>
             <SubmitButton
               label="Register"
               onClick={handleSubmit}
               fullWidth
             />
-      </Box>
+          </Box>
 
+          {/* Login redirect */}
           <Typography variant="body2" color="text.secondary" align="center">
-            Already have an account? <span style={{ color: '#1976d2', cursor: 'pointer' }} onClick={() => navigate('/login')}>Sign in</span>
+            Already have an account?{" "}
+            <span
+              style={{ color: '#1976d2', cursor: 'pointer' }}
+              onClick={() => navigate('/login')}
+            >
+              Sign in
+            </span>
           </Typography>
         </Stack>
       </Paper>

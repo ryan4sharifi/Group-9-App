@@ -1,9 +1,11 @@
+# Match Routes – Match volunteers to events based on skill overlap
+
 from fastapi import APIRouter, HTTPException
 from app.supabase_client import supabase
 
 router = APIRouter()
 
-
+# Helper function to fetch user skills from user_profiles table
 def fetch_user_skills(user_id: str) -> set:
     """Fetches the skill set of a user based on user_id."""
     response = supabase.table("user_profiles").select("skills").eq("user_id", user_id).execute()
@@ -13,13 +15,13 @@ def fetch_user_skills(user_id: str) -> set:
     skills_raw = response.data[0].get("skills", [])
     return set(skills_raw if isinstance(skills_raw, list) else [])
 
-
+# Helper function to retrieve all events from database
 def fetch_all_events() -> list:
     """Fetches all events from the database."""
     response = supabase.table("events").select("*").execute()
     return response.data if response and response.data else []
 
-
+# API route to match and notify volunteers about relevant events
 @router.get("/match-and-notify/{user_id}")
 async def match_and_notify(user_id: str) -> dict:
     """
@@ -34,10 +36,11 @@ async def match_and_notify(user_id: str) -> dict:
         for event in all_events:
             event_skills = set(event.get("required_skills", []))
 
+            # Check if user's skills match required skills of event
             if user_skills.intersection(event_skills):
                 matched_events.append(event)
 
-                # Prevent duplicate notifications
+                # Prevent sending duplicate notifications
                 existing_notif = supabase.table("notifications") \
                     .select("id") \
                     .eq("user_id", user_id) \
@@ -57,7 +60,7 @@ async def match_and_notify(user_id: str) -> dict:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
+# API route to return matched events (without sending notifications)
 @router.get("/matched_events/{user_id}")
 async def get_matched_events(user_id: str) -> dict:
     """

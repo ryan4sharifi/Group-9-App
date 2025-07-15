@@ -1,3 +1,4 @@
+# Routes for managing user profiles (create, read, update, delete)
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, constr
 from typing import Optional, List
@@ -6,6 +7,7 @@ from app.supabase_client import supabase
 
 router = APIRouter()
 
+# Pydantic model for user profile excluding the ID
 class UserProfileWithoutID(BaseModel):
     full_name: Optional[constr(max_length=50)] = None
     address1: Optional[constr(max_length=100)] = None
@@ -13,43 +15,47 @@ class UserProfileWithoutID(BaseModel):
     city: Optional[constr(max_length=100)] = None
     state: Optional[constr(min_length=2, max_length=2)] = None
     zip_code: Optional[constr(min_length=5, max_length=9)] = None
-    skills: Optional[List[str]] = []
+    skills: Optional[List[str]] = []  # Multi-select dropdown expected
     preferences: Optional[str] = None
     availability: Optional[date] = None
     role: Optional[constr(max_length=20)] = "volunteer"
 
+# Create or update a profile for a given user
 @router.post("/profile/{user_id}")
 async def create_or_update_profile(user_id: str, profile: UserProfileWithoutID):
     try:
-        data = profile.dict(exclude_none=True)
+        data = profile.dict(exclude_none=True)  # Exclude empty fields
         data["user_id"] = user_id
         print("DATA RECEIVED:", data)
 
+        # Convert date to ISO format string for Supabase
         if "availability" in data and isinstance(data["availability"], date):
             data["availability"] = data["availability"].isoformat()
 
+        # Upsert into Supabase user_profiles table
         response = supabase.table("user_profiles").upsert(data, on_conflict=["user_id"]).execute()
         return {"message": "Profile saved", "data": response.data}
     except Exception as e:
         print("SERVER ERROR:", e)
         raise HTTPException(status_code=500, detail=f"Failed to save profile: {str(e)}")
 
+# Retrieve a user's profile + email and role from credentials table
 @router.get("/profile/{user_id}")
 async def get_profile(user_id: str):
     try:
-        # Fetch profile data
+        # Get profile data from user_profiles
         profile_res = supabase.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
         profile_data = profile_res.data if profile_res and profile_res.data else {}
 
-        # Fetch email and role from user_credentials
+        # Also fetch email and role from user_credentials
         creds_res = supabase.table("user_credentials").select("email", "role").eq("id", user_id).maybe_single().execute()
         creds_data = creds_res.data if creds_res and creds_res.data else {}
 
-        # Merge and return both
-        return {**profile_data, **creds_data}
+        return {**profile_data, **creds_data}  # Merge both into one response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve profile: {str(e)}")
 
+# Delete a profile from the system
 @router.delete("/profile/{user_id}")
 async def delete_profile(user_id: str):
     try:
@@ -59,7 +65,8 @@ async def delete_profile(user_id: str):
         return {"message": "Profile deleted", "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete profile: {str(e)}")
-    
+
+# Admin-only endpoint to fetch all volunteers
 @router.get("/volunteers")
 async def get_all_volunteers():
     """Get all volunteers for admin matching interface"""
