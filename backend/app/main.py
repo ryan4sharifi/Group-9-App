@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import (
-    auth, profile, events, history, match, notifications, report
+    auth, profile, events, history, match, notifications, report, contact
 )
 
 app = FastAPI()
@@ -27,3 +27,4 @@ app.include_router(history.router, prefix="/api")
 app.include_router(match.router, prefix="/api")
 app.include_router(notifications.router, prefix="/api")
 app.include_router(report.router, prefix="/api")
+app.include_router(contact.router, prefix="/api/contact")
