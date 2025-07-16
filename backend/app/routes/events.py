@@ -2,10 +2,10 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, constr
 from typing import List
-from app.supabase_client import supabase
+from app.supabase_client import get_supabase_client  #added import for Supabase client ** CHANGED THID **
+
 
 router = APIRouter()
-
 # Define event schema/validation for incoming requests
 class Event(BaseModel):
     name: constr(max_length=100)
@@ -17,6 +17,7 @@ class Event(BaseModel):
 
 # Utility to restrict certain operations to admin users only
 def verify_admin(user_id: str):
+    supabase = get_supabase_client() # Get the Supabase client **Changed to use the function**
     user_check = supabase.table("user_credentials").select("role").eq("id", user_id).single().execute()
     if not user_check.data or user_check.data["role"] != "admin":
         raise HTTPException(status_code=403, detail="Only admins can perform this action")
