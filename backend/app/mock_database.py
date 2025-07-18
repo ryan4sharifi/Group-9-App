@@ -1,14 +1,8 @@
-# Mock Data Storage System
-# This replaces Supabase for assignment compliance
-# "No Database Implementation: We are not implementing the database yet. For this assignment, you can hard code the values."
 
-import uuid
 from datetime import datetime, date
 from typing import Dict, List, Any, Optional
 
-# ================================
-# MOCK DATABASE STORAGE
-# ================================
+
 
 # In-memory storage dictionaries
 MOCK_USERS: Dict[str, Dict] = {}
@@ -18,29 +12,28 @@ MOCK_NOTIFICATIONS: Dict[str, Dict] = {}
 MOCK_HISTORY: Dict[str, Dict] = {}
 MOCK_CONTACT_MESSAGES: List[Dict] = []
 
-# ================================
 # SAMPLE HARDCODED DATA
-# ================================
+
 
 SAMPLE_USERS = {
     "admin-001": {
         "id": "admin-001",
         "email": "admin@volunteer.org",
-        "password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/lewfBmdPVejjKEW/.",  # "admin123"
+        "password": "$2b$12$nyZxynT8ZKXcyRIx6SoxCeim/W7nhGN4YSCQRkMxTi8C5JdElJ15e",  # "admin123"
         "role": "admin",
         "created_at": "2024-01-01T00:00:00"
     },
     "volunteer-001": {
         "id": "volunteer-001", 
         "email": "john.doe@email.com",
-        "password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/lewfBmdPVejjKEW/.",  # "volunteer123"
+        "password": "$2b$12$poCKlqemOmXVCHsWE7ETjOXEzEfehxiTk3a/0xUNxfLuAjhkMYoqe",  # "volunteer123"
         "role": "volunteer",
         "created_at": "2024-01-15T00:00:00"
     },
     "volunteer-002": {
         "id": "volunteer-002",
         "email": "sarah.smith@email.com", 
-        "password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/lewfBmdPVejjKEW/.",  # "volunteer123"
+        "password": "$2b$12$poCKlqemOmXVCHsWE7ETjOXEzEfehxiTk3a/0xUNxfLuAjhkMYoqe",  # "volunteer123"
         "role": "volunteer",
         "created_at": "2024-02-01T00:00:00"
     }
@@ -361,9 +354,8 @@ class MockSupabaseClient:
         """Get mock table interface"""
         return MockSupabaseTable(table_name)
 
-# ================================
+
 # INITIALIZE ON IMPORT
-# ================================
 
 # Auto-initialize when module is imported
 initialize_mock_data()

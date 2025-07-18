@@ -40,5 +40,19 @@ def get_supabase_client():
         if MOCK_AVAILABLE:
             return mock_supabase
         else:
-            raise ValueError("Neither Supabase nor mock database available")  #Better error message
+            raise ValueError("Neither Supabase nor mock database available") 
     return create_client(SUPABASE_URL, SUPABASE_KEY)
+
+async def check_database_health():
+    """Check if database connection is healthy"""
+    try:
+        if supabase:
+            # If using mock database, always return healthy
+            if MOCK_AVAILABLE and not SUPABASE_URL:
+                return {"status": "healthy", "database": "mock"}
+            response = supabase.table("users").select("id").limit(1).execute()
+            return {"status": "healthy", "database": "supabase"}
+        else:
+            return {"status": "unhealthy", "database": "none"}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
