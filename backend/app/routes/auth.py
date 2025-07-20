@@ -119,11 +119,16 @@ async def register(user: UserRegister):
             "role": user.role.value
         }).execute()
 
-        # Handle Supabase insert failure
-        if not result.data or "id" not in result.data[0]:
+        # Handle Supabase insert failure - check both data and structure
+        if not result.data or not isinstance(result.data, list) or len(result.data) == 0:
             raise HTTPException(status_code=500, detail="User could not be created")
+        
+        # Get the new user record
+        new_user = result.data[0]
+        if "id" not in new_user:
+            raise HTTPException(status_code=500, detail="User ID not returned")
 
-        user_id = result.data[0]["id"]
+        user_id = new_user["id"]
         
         # Create JWT token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

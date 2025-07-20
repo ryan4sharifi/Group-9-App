@@ -1,6 +1,7 @@
 
 from datetime import datetime, date
 from typing import Dict, List, Any, Optional
+import uuid
 
 
 
@@ -172,9 +173,7 @@ def get_current_timestamp() -> str:
     """Get current timestamp in ISO format"""
     return datetime.now().isoformat()
 
-# ================================
 # MOCK SUPABASE CLIENT
-# ================================
 
 class MockSupabaseResponse:
     """Mock response object that mimics Supabase response structure"""
@@ -294,7 +293,23 @@ class MockSupabaseQuery:
         """Execute insert operation"""
         record_id = generate_id()
         new_record = {**self.data, "id": record_id, "created_at": get_current_timestamp()}
+        
+        # Add to storage
         self.storage[record_id] = new_record
+        
+        # Also add to global storage for persistence
+        if self.table_name == "user_credentials":
+            MOCK_USERS[record_id] = new_record
+        elif self.table_name == "user_profiles":
+            MOCK_PROFILES[record_id] = new_record
+        elif self.table_name == "events":
+            MOCK_EVENTS[record_id] = new_record
+        elif self.table_name == "notifications":
+            MOCK_NOTIFICATIONS[record_id] = new_record
+        elif self.table_name == "volunteer_history":
+            MOCK_HISTORY[record_id] = new_record
+            
+        print(f"✅ Inserted record into {self.table_name}: {record_id}")
         return MockSupabaseResponse(data=[new_record])
     
     def _execute_update(self):

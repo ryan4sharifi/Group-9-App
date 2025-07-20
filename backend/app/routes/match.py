@@ -96,6 +96,24 @@ def calculate_match_score(skill_match: float, distance: float, urgency: str,
     
     return round(total_score * 100, 2)  # Convert back to percentage
 
+def fetch_user_skills(user_id: str) -> set:
+    """Helper function to fetch user skills from database"""
+    try:
+        result = supabase.table("user_profiles").select("skills").eq("user_id", user_id).execute()
+        if result.data:
+            return set(result.data[0].get("skills", []))
+        return set()
+    except Exception:
+        return set()
+
+def fetch_all_events() -> List[Dict]:
+    """Helper function to fetch all events from database"""
+    try:
+        result = supabase.table("events").select("*").execute()
+        return result.data if result.data else []
+    except Exception:
+        return []
+
 # API route to match and notify volunteers about relevant events
 @router.get("/match-and-notify/{user_id}")
 async def match_and_notify(user_id: str) -> dict:
