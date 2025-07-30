@@ -100,11 +100,15 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
+<<<<<<< HEAD
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:5173",
         "https://your-frontend-domain.com"
     ],
+=======
+    allow_origins=["http://localhost:3000"],  
+>>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -140,6 +144,7 @@ async def root():
         ]
     }
 
+<<<<<<< HEAD
 # Health check endpoint
 @app.get("/health")
 async def health_check():
@@ -197,3 +202,13 @@ async def notify_realtime(user_id: str, message: str, current_user: dict = Depen
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+=======
+# 🔌 Register API route modules with appropriate prefixes
+app.include_router(auth.router, prefix="/auth")
+app.include_router(profile.router, prefix="/api")
+app.include_router(events.router, prefix="/api")
+app.include_router(history.router, prefix="/api")
+app.include_router(match.router, prefix="/api")
+app.include_router(notifications.router, prefix="/api")
+app.include_router(report.router, prefix="/api")
+>>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a

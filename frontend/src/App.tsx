@@ -4,6 +4,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
+import EventFormPage from './pages/EventFormPage';
+import MatchPage from './pages/MatchPage';
+import NotificationPage from './pages/NotificationPage';
+import HistoryPage from './pages/HistoryPage';
+import ReportPage from './pages/ReportPage';
 import HomePage from './pages/HomePage';
 import EventsPage from './pages/EventsPage';
 import VolunteerMatchingPage from './pages/VolunteerMatchingPage';
@@ -31,8 +36,13 @@ const AppRoutes = () => {
 
   const isLoggedIn = !!userId;
 
+<<<<<<< HEAD
   if (loading) return null;
   
+=======
+  if (loading) return null; // or a spinner if preferred
+
+>>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
   return (
     <>
       <Navbar />
@@ -50,6 +60,11 @@ const AppRoutes = () => {
         <Route path="/notifications" element={isLoggedIn ? <NotificationsPage /> : <Navigate to="/login" />} />
         {/* Protected routes */}
         <Route path="/profile" element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" />} />
+        <Route path="/event-form" element={isLoggedIn ? <EventFormPage /> : <Navigate to="/login" />} />
+        <Route path="/match" element={isLoggedIn ? <MatchPage /> : <Navigate to="/login" />} />
+        <Route path="/notifications" element={isLoggedIn ? <NotificationPage /> : <Navigate to="/login" />} />
+        <Route path="/history" element={isLoggedIn ? <HistoryPage /> : <Navigate to="/login" />} />
+        <Route path="/reports" element={isLoggedIn ? <ReportPage /> : <Navigate to="/login" />} />
       </Routes>
     </>
   );

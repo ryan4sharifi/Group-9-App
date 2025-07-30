@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   AppBar, Toolbar, Typography, Button, Box, Container,
   useTheme, useMediaQuery, IconButton, Drawer, List, ListItemButton,
-  ListItemText, Divider, ListItemIcon, Chip, alpha, Avatar
+  ListItemText, Divider, ListItemIcon, Chip, alpha
 } from '@mui/material';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -26,7 +26,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:1080px)'); // Changed from theme.breakpoints.down('md')
+  const isMobile = useMediaQuery('(max-width:1080px)'); 
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
   const { userId, setUserId } = useUser();
   const isLoggedIn = !!userId;
@@ -34,7 +34,7 @@ const Navbar: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Track scrolling for navbar styling
+  
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll);
@@ -58,17 +58,26 @@ const Navbar: React.FC = () => {
     }
 
     return role === 'admin' ? [
+<<<<<<< HEAD
       // { label: 'Create Event', path: '/event-form', icon: <EventIcon /> },
       // { label: 'Reports', path: '/reports', icon: <AssessmentIcon /> },
       { label: 'Match Volunteers', path: '/admin-matching', icon: <AssignmentIcon /> },
+=======
+      { label: 'Create Event', path: '/event-form', icon: <EventIcon /> },
+      { label: 'Reports', path: '/reports', icon: <AssessmentIcon /> },
+>>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
       { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon /> },
       { label: 'History', path: '/history', icon: <HistoryIcon /> },
       { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
     ] : [
       { label: 'Home', path: '/', icon: <HomeIcon /> },
       { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
+<<<<<<< HEAD
       // { label: 'Events', path: '/match', icon: <EventIcon /> },
       { label: 'Find Matches', path: '/match', icon: <EventIcon /> },
+=======
+      { label: 'Events', path: '/match', icon: <EventIcon /> },
+>>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
       { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon /> },
       { label: 'History', path: '/history', icon: <HistoryIcon /> },
     ];

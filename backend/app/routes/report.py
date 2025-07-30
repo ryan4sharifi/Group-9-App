@@ -8,6 +8,7 @@ from app.routes.auth import verify_token
 
 router = APIRouter()
 
+<<<<<<< HEAD
 class ReportFilter(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
@@ -37,6 +38,9 @@ class EventReport(BaseModel):
     completion_rate: float
 
 # Returns full volunteer participation data including user and event details
+=======
+
+>>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
 @router.get("/reports/volunteers")
 async def volunteer_participation_report(
     filters: ReportFilter = None,
@@ -47,6 +51,7 @@ async def volunteer_participation_report(
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
+<<<<<<< HEAD
         # Get volunteer history with joins
         query = supabase.table("volunteer_history").select("*, user_profiles(*), events(*)")
         
@@ -112,7 +117,20 @@ async def volunteer_participation_report(
         
         return {"reports": reports}
     
+=======
+        response = supabase.table("volunteer_history").select(
+            "*, "
+            "user_credentials!volunteer_history_user_id_fkey(" 
+                "*, user_profiles(*)"  
+            "), "
+            "events(*)" 
+        ).execute()
+
+        
+        return {"report": response.data}
+>>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
     except Exception as e:
+        print(f"Backend Error in volunteer_participation_report: {e}") 
         raise HTTPException(status_code=500, detail=str(e))
 
 # Returns a summary of all events with number of volunteers who participated
