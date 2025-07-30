@@ -9,7 +9,7 @@ import {
   FormControl,
   InputLabel,
   Select,
-  type SelectChangeEvent,
+  SelectChangeEvent,
   Paper,
   Container,
   Divider,

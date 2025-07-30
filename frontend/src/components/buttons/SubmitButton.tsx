@@ -1,6 +1,5 @@
 import React from 'react';
-import { Button, CircularProgress } from '@mui/material';
-import type { SxProps, Theme } from '@mui/system';
+import { Button, CircularProgress, SxProps, Theme } from '@mui/material';
 
 interface SubmitButtonProps {
   label: string;
