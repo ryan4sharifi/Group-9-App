@@ -3,12 +3,22 @@ from app.supabase_client import supabase
 
 router = APIRouter()
 
+
 @router.get("/reports/volunteers")
 async def volunteer_participation_report():
     try:
-        response = supabase.table("volunteer_history").select("*, user_profiles(*), events(*)").execute()
+        response = supabase.table("volunteer_history").select(
+            "*, "
+            "user_credentials!volunteer_history_user_id_fkey(" 
+                "*, user_profiles(*)"  
+            "), "
+            "events(*)" 
+        ).execute()
+
+        
         return {"report": response.data}
     except Exception as e:
+        print(f"Backend Error in volunteer_participation_report: {e}") 
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/reports/events")

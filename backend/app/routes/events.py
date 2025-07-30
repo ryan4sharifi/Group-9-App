@@ -58,17 +58,17 @@ async def update_event(event_id: str, event: Event, user_id: str):
 async def delete_event(event_id: str, user_id: str):
     verify_admin(user_id)
     try:
-        # Step 1: Get event name for notifications
+        # Get event name for notifications
         event_res = supabase.table("events").select("name").eq("id", event_id).single().execute()
         if not event_res.data:
             raise HTTPException(status_code=404, detail="Event not found")
         event_name = event_res.data["name"]
 
-        # Step 2: Get all volunteer signups (user_ids)
+        # Get all volunteer signups (user_ids)
         history_res = supabase.table("volunteer_history").select("user_id").eq("event_id", event_id).execute()
         user_ids = [row["user_id"] for row in history_res.data or []]
 
-        # Step 3: Notify each user
+        # Notify each user
         for uid in user_ids:
             supabase.table("notifications").insert({
                 "user_id": uid,
@@ -78,10 +78,10 @@ async def delete_event(event_id: str, user_id: str):
                 
             }).execute()
 
-        # Step 4: Delete volunteer history to avoid foreign key error
+       
         supabase.table("volunteer_history").delete().eq("event_id", event_id).execute()
 
-        # Step 5: Delete the event
+        #
         supabase.table("events").delete().eq("id", event_id).execute()
 
         return {"message": "Event deleted and users notified"}

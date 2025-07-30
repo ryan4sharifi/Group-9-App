@@ -24,7 +24,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:1080px)'); // Changed from theme.breakpoints.down('md')
+  const isMobile = useMediaQuery('(max-width:1080px)'); 
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
   const { userId, setUserId } = useUser();
   const isLoggedIn = !!userId;
@@ -32,7 +32,7 @@ const Navbar: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Track scrolling for navbar styling
+  
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll);

@@ -7,12 +7,13 @@ import {
   IconButton,
   Snackbar,
   Alert,
-  Grid,
   Container,
   Chip,
   Divider,
   useTheme,
   useMediaQuery,
+  Autocomplete, // Import Autocomplete
+  TextField, // Import TextField (used by Autocomplete)
 } from "@mui/material";
 import { Delete, Edit, LocationOn, DateRange, Flag } from "@mui/icons-material";
 import axios from "axios";
@@ -24,20 +25,33 @@ import DatePickerField from "../components/inputs/DatePickerField";
 import SubmitButton from "../components/buttons/SubmitButton";
 import { SelectChangeEvent } from "@mui/material";
 
+// Import usStates data
+import usStates from '../data/usStates.json'; // Adjust path if your data directory is different
+
+
 interface EventData {
   id?: string;
   name: string;
   description: string;
-  location: string;
+  location: string; // This will now store the 2-letter state code
   required_skills: string[];
   urgency: string;
   event_date: Date | null;
 }
 
+interface FormErrors {
+  name?: string;
+  description?: string;
+  location?: string;
+  required_skills?: string;
+  urgency?: string;
+  event_date?: string;
+}
+
 const defaultEvent: EventData = {
   name: "",
   description: "",
-  location: "",
+  location: "", // Default to empty string for location
   required_skills: [],
   urgency: "",
   event_date: null,
@@ -55,6 +69,7 @@ const EventFormPage: React.FC = () => {
   const [events, setEvents] = useState<EventData[]>([]);
   const [status, setStatus] = useState({ success: "", error: "" });
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -74,24 +89,83 @@ const EventFormPage: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setEvent((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  // NEW: Handler for Autocomplete (Location field)
+  const handleLocationChange = (event: React.SyntheticEvent, value: { label: string; value: string } | null) => {
+    setEvent(prev => ({ ...prev, location: value ? value.value : "" }));
+    setErrors(prev => ({ ...prev, location: undefined }));
   };
 
   const handleDropdownChange = (e: SelectChangeEvent) => {
     const { name, value } = e.target;
     setEvent((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleArrayChange = (name: string, values: string[]) => {
     setEvent((prev) => ({ ...prev, [name]: values }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleDateChange = (date: Date | null) => {
     setEvent((prev) => ({ ...prev, event_date: date }));
+    setErrors((prev) => ({ ...prev, event_date: undefined }));
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+    const { name, description, location, required_skills, urgency, event_date } = event;
+
+    if (!name.trim()) {
+      newErrors.name = "Event Name is required.";
+    }
+    if (!description.trim()) {
+      newErrors.description = "Description is required.";
+    }
+    // Updated validation for location (now a state code)
+    if (!location.trim()) {
+      newErrors.location = "Location (State) is required.";
+    } else if (!usStates.some(state => state.value === location)) {
+        newErrors.location = "Please select a valid state from the list.";
+    }
+
+    if (!required_skills || required_skills.length === 0) {
+      newErrors.required_skills = "At least one skill is required.";
+    }
+    if (!urgency.trim()) {
+      newErrors.urgency = "Urgency is required.";
+    }
+    if (!event_date) {
+      newErrors.event_date = "Event Date is required.";
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(event_date);
+      selectedDate.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        newErrors.event_date = "Event Date cannot be in the past.";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
+    if (!validateForm()) {
+      setStatus({ success: "", error: "Please correct the errors in the form." });
+      setSnackbarOpen(true);
+      return;
+    }
+
     try {
-      if (!userId) throw new Error("User ID is missing");
+      if (!userId) {
+        setStatus({ success: "", error: "User not logged in. Please log in to create/edit events." });
+        setSnackbarOpen(true);
+        return;
+      }
 
       const formattedEvent = {
         ...event,
@@ -123,11 +197,17 @@ const EventFormPage: React.FC = () => {
   };
 
   const handleEdit = (evt: EventData) => {
-    setEvent({ ...evt, event_date: evt.event_date ? new Date(evt.event_date) : null });
+    const skillsToEdit = Array.isArray(evt.required_skills) ? evt.required_skills : [];
+    setEvent({ ...evt, event_date: evt.event_date ? new Date(evt.event_date) : null, required_skills: skillsToEdit });
+    setErrors({});
   };
 
   const handleDelete = async (id?: string) => {
-    if (!id || !userId) return;
+    if (!id || !userId) {
+      setStatus({ success: "", error: "Event ID or User ID is missing for deletion." });
+      setSnackbarOpen(true);
+      return;
+    }
 
     try {
       await axios.delete(`http://localhost:8000/api/events/${id}`, {
@@ -160,14 +240,42 @@ const EventFormPage: React.FC = () => {
         </Typography>
 
         <Paper sx={{ p: 3, mb: 4, boxShadow: theme.shadows[3], borderRadius: 2 }}>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <InputField label="Event Name" name="name" value={event.name} onChange={handleChange} />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <InputField label="Location" name="location" value={event.location} onChange={handleChange} />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 2 }}>
+              <Box sx={{ width: isMobile ? '100%' : '50%' }}>
+                <InputField
+                  label="Event Name"
+                  name="name"
+                  value={event.name}
+                  onChange={handleChange}
+                  error={!!errors.name}
+                  helperText={errors.name}
+                  required
+                />
+              </Box>
+              <Box sx={{ width: isMobile ? '100%' : '50%' }}>
+                {/* --- NEW: Autocomplete for Location (State) --- */}
+                <Autocomplete
+                  options={usStates}
+                  getOptionLabel={(option) => option.label}
+                  value={usStates.find(state => state.value === event.location) || null}
+                  onChange={handleLocationChange}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Location (State)"
+                      margin="normal"
+                      fullWidth
+                      error={!!errors.location}
+                      helperText={errors.location}
+                      required
+                    />
+                  )}
+                />
+                {/* --- END NEW --- */}
+              </Box>
+            </Box>
+            <Box sx={{ width: '100%' }}>
               <InputField
                 label="Description"
                 name="description"
@@ -175,42 +283,54 @@ const EventFormPage: React.FC = () => {
                 onChange={handleChange}
                 multiline
                 rows={3}
+                error={!!errors.description}
+                helperText={errors.description}
+                required
               />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
+            </Box>
+            <Box sx={{ width: '100%' }}>
               <MultiInputField
                 label="Required Skills"
                 name="required_skills"
                 value={event.required_skills}
                 onChange={handleArrayChange}
+                error={!!errors.required_skills}
+                helperText={errors.required_skills}
+                required
               />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <DropdownField
-                label="Urgency"
-                name="urgency"
-                value={event.urgency}
-                onChange={handleDropdownChange}
-                options={urgencyOptions}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <DatePickerField
-                label="Event Date"
-                value={event.event_date}
-                onChange={handleDateChange}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <Box display="flex" justifyContent="flex-end" mt={2}>
-                <SubmitButton
-                  label={event.id ? "Update Event" : "Create Event"}
-                  onClick={handleSubmit}
-                  sx={{ px: 4 }}
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 2 }}>
+              <Box sx={{ width: isMobile ? '100%' : '50%' }}>
+                <DropdownField
+                  label="Urgency"
+                  name="urgency"
+                  value={event.urgency}
+                  onChange={handleDropdownChange}
+                  options={urgencyOptions}
+                  error={!!errors.urgency}
+                  helperText={errors.urgency}
+                  required
                 />
               </Box>
-            </Grid>
-          </Grid>
+              <Box sx={{ width: isMobile ? '100%' : '50%' }}>
+                <DatePickerField
+                  label="Event Date"
+                  value={event.event_date}
+                  onChange={handleDateChange}
+                  error={!!errors.event_date}
+                  helperText={errors.event_date}
+                  required
+                />
+              </Box>
+            </Box>
+            <Box display="flex" justifyContent="flex-end" mt={2}>
+              <SubmitButton
+                label={event.id ? "Update Event" : "Create Event"}
+                onClick={handleSubmit}
+                sx={{ px: 4 }}
+              />
+            </Box>
+          </Box>
         </Paper>
 
         <Box mb={4}>
@@ -226,9 +346,14 @@ const EventFormPage: React.FC = () => {
               </Typography>
             </Paper>
           ) : (
-            <Grid container spacing={2}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
               {events.map((evt) => (
-                <Grid key={evt.id} size={{ xs: 12, sm: 6, md: 4 }}>
+                <Box key={evt.id} sx={{
+                  width: isMobile ? '100%' : 'calc(50% - 8px)',
+                  '@media (min-width:900px)': {
+                    width: 'calc(33.33% - 16px)',
+                  }
+                }}>
                   <Paper sx={{
                     p: 3,
                     height: "100%",
@@ -268,7 +393,7 @@ const EventFormPage: React.FC = () => {
                       {evt.location && (
                         <Box display="flex" alignItems="center" gap={1}>
                           <LocationOn fontSize="small" color="action" />
-                          <Typography variant="body2" color="text.secondary" noWrap>{evt.location}</Typography>
+                          <Typography variant="body2" color="text.secondary" noWrap>{usStates.find(s => s.value === evt.location)?.label || evt.location}</Typography> {/* Display full state name */}
                         </Box>
                       )}
 
@@ -309,9 +434,9 @@ const EventFormPage: React.FC = () => {
                       </Box>
                     )}
                   </Paper>
-                </Grid>
+                </Box>
               ))}
-            </Grid>
+            </Box>
           )}
         </Box>
 
