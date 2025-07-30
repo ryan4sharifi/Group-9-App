@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr, Field, constr
 from enum import Enum
-from passlib.hash import bcrypt # This seems to be the correct hashing library you're using
-# from app.utils.auth_utils import get_password_hash, verify_password # Removed, as you're using bcrypt directly here
+from passlib.hash import bcrypt 
 from app.supabase_client import supabase
 
 router = APIRouter()

@@ -1,5 +1,5 @@
 // src/pages/HistoryPage.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import {
   Container,
@@ -13,7 +13,7 @@ import {
   Box,
   Paper,
   Chip,
-  Snackbar, // Added Snackbar
+  Snackbar,
 } from "@mui/material";
 import { MoreVert as MoreIcon } from "@mui/icons-material";
 import { useUser } from "../context/UserContext";
@@ -21,28 +21,28 @@ import { useUser } from "../context/UserContext";
 interface HistoryItem {
   id: string;
   status: string;
-  user_id: string; // Added user_id based on schema
+  user_id: string;
   event_id: string;
   events: {
     name: string;
     description: string;
     location: string;
-    event_date: string; // Stored as string, convert to Date for display
+    event_date: string;
     urgency: string;
   };
-  signed_up_at: string; // Added based on schema
+  signed_up_at: string;
 }
 
 const HistoryPage: React.FC = () => {
   const { userId } = useUser();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState({ success: "", error: "" }); // Combined status for Snackbar
-  const [snackbarOpen, setSnackbarOpen] = useState(false); // Snackbar control
+  const [status, setStatus] = useState({ success: "", error: "" });
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     setLoading(true);
-    setStatus({ success: "", error: "" }); // Clear previous status
+    setStatus({ success: "", error: "" });
     try {
       if (!userId) {
         setStatus({ success: "", error: "User ID is missing. Please log in." });
@@ -55,9 +55,9 @@ const HistoryPage: React.FC = () => {
       setStatus({ success: "", error: "Failed to load volunteer history." });
     } finally {
       setLoading(false);
-      setSnackbarOpen(true); // Open Snackbar even for fetch errors
+      setSnackbarOpen(true);
     }
-  };
+  }, [userId]); // Dependency: userId
 
   useEffect(() => {
     if (userId) {
@@ -67,20 +67,21 @@ const HistoryPage: React.FC = () => {
       setStatus({ success: "", error: "User not logged in." });
       setSnackbarOpen(true);
     }
-  }, [userId]);
+  }, [fetchHistory, userId]); // Added fetchHistory to dependencies
+
 
   const handleUpdate = async (logId: string, newStatus: string, eventId: string) => {
-    setStatus({ success: "", error: "" }); // Clear previous status
+    setStatus({ success: "", error: "" });
     try {
       if (!userId) throw new Error("User ID is missing for update.");
 
       await axios.put(`http://localhost:8000/api/history/${logId}`, {
         user_id: userId,
-        event_id: eventId, // Ensure eventId is passed correctly
+        event_id: eventId,
         status: newStatus,
       });
       setStatus({ success: `Status updated to ${newStatus}.`, error: "" });
-      fetchHistory(); // Re-fetch to show updated status
+      fetchHistory();
     } catch (err) {
       console.error("Failed to update log:", err);
       setStatus({ success: "", error: "Failed to update log." });
@@ -90,14 +91,14 @@ const HistoryPage: React.FC = () => {
   };
 
   const handleDelete = async (logId: string) => {
-    setStatus({ success: "", error: "" }); // Clear previous status
+    setStatus({ success: "", error: "" });
     try {
       await axios.delete(`http://localhost:8000/api/history/${logId}`);
-      setStatus({ success: "Log deleted successfully.", error: "" });
-      fetchHistory(); // Re-fetch to show updated list
+      setStatus({ success: "Event deleted successfully.", error: "" });
+      fetchHistory();
     } catch (err) {
-      console.error("Failed to delete log:", err);
-      setStatus({ success: "", error: "Failed to delete log." });
+      console.error("Delete failed:", err);
+      setStatus({ success: "", error: "Delete failed" });
     } finally {
       setSnackbarOpen(true);
     }
@@ -111,13 +112,12 @@ const HistoryPage: React.FC = () => {
         return 'info';
       case 'missed':
         return 'error';
-      case 'cancelled': // If you introduce a 'cancelled' status
+      case 'cancelled':
         return 'warning';
       default:
         return 'default';
     }
   };
-
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -141,8 +141,8 @@ const HistoryPage: React.FC = () => {
               <Paper
                 key={item.id}
                 elevation={3}
-                sx={{ p: 2, display: "flex", flexDirection: 'column', // Allow content to stack vertically
-                    justifyContent: "space-between", alignItems: "flex-start", // Align items to start
+                sx={{ p: 2, display: "flex", flexDirection: 'column',
+                    justifyContent: "space-between", alignItems: "flex-start",
                     borderRadius: 2
                 }}
               >
@@ -158,7 +158,6 @@ const HistoryPage: React.FC = () => {
                     currentStatus={item.status}
                     onUpdate={handleUpdate}
                     onDelete={handleDelete}
-                    // Pass eventId to HistoryMenu so it can be relayed back for update
                     eventId={item.event_id}
                   />
                 </Box>
@@ -176,7 +175,6 @@ const HistoryPage: React.FC = () => {
         </>
       )}
 
-      {/* Snackbar for all success/error messages */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={4000}
@@ -196,19 +194,19 @@ const HistoryPage: React.FC = () => {
   );
 };
 
-// Updated HistoryMenu to accept eventId
+// ... HistoryMenu component (remains unchanged)
 const HistoryMenu = ({
   logId,
   currentStatus,
   onUpdate,
   onDelete,
-  eventId, // Added eventId prop
+  eventId,
 }: {
   logId: string;
   currentStatus: string;
-  onUpdate: (logId: string, newStatus: string, eventId: string) => void; // Updated signature
+  onUpdate: (logId: string, newStatus: string, eventId: string) => void;
   onDelete: (logId: string) => void;
-  eventId: string; // Event ID is needed for the update call
+  eventId: string;
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -227,7 +225,7 @@ const HistoryMenu = ({
             disabled={status === currentStatus}
             onClick={() => {
               handleClose();
-              onUpdate(logId, status, eventId); // Pass eventId here
+              onUpdate(logId, status, eventId);
             }}
           >
             Mark as {status}

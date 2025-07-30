@@ -1,5 +1,5 @@
 // src/pages/ReportPage.tsx
-import React, { useState, useEffect, useCallback, useRef } from "react"; // Added useRef
+import React, { useState, useCallback, useRef } from "react"; // Added useRef
 import axios from "axios";
 import {
   Container,

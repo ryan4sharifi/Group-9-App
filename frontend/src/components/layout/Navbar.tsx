@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   AppBar, Toolbar, Typography, Button, Box, Container,
   useTheme, useMediaQuery, IconButton, Drawer, List, ListItemButton,
-  ListItemText, Divider, ListItemIcon, Chip, alpha, Avatar
+  ListItemText, Divider, ListItemIcon, Chip, alpha
 } from '@mui/material';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import {
