@@ -1,19 +1,10 @@
-<<<<<<< HEAD
-// ProfilePage component displays and manages user profile information
-import React, { useEffect, useState } from "react";
-=======
 // src/pages/ProfilePage.tsx - FINAL Refactored Version with warning fixes
 import React, { useEffect, useState, useCallback } from "react";
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
 import axios from "axios";
 import {
   Box, Typography, Alert, Container, Snackbar,
   useMediaQuery, useTheme, CircularProgress,
-<<<<<<< HEAD
-  Card, CardContent, Paper, Divider, FormControl, InputLabel, Select, MenuItem
-=======
   Card, CardContent,
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
 } from "@mui/material";
 import {
   Person as PersonIcon,
@@ -30,24 +21,8 @@ import { FormData, FormErrors } from '../interfaces/profile';
 
 import { useUser } from "../context/UserContext";
 
-<<<<<<< HEAD
-// Define expected structure of form data
-interface FormData {
-  full_name?: string;
-  address1?: string;
-  address2?: string;
-  city?: string;
-  state?: string;
-  zip_code?: string;
-  email?: string;
-  preferences?: string;
-  skills: string[];
-  availability?: string;
-}
-=======
 import usStates from '../data/usStates.json';
 
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
 
 const ProfilePage: React.FC = () => {
   const theme = useTheme();
@@ -74,13 +49,6 @@ const ProfilePage: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
-<<<<<<< HEAD
-  // Fields that accept plain string values
-  const stringFields: (keyof FormData)[] = [
-    "full_name", "address1", "address2", "city", "state", "zip_code", "preferences"
-  ];
-=======
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
 
   // US state dropdown options
   const stateOptions = [
@@ -142,33 +110,6 @@ const ProfilePage: React.FC = () => {
     if (storedId) setUserId(storedId);
   }, [setUserId]);
 
-<<<<<<< HEAD
-  // Fetch user profile info from API
-  useEffect(() => {
-    if (!userId || userId === "undefined") return;
-
-    const fetchProfile = async () => {
-      setStatus(prev => ({ ...prev, loading: true }));
-      try {
-        const profileRes = await axios.get(`http://localhost:8000/api/profile/${userId}`);
-        setFormData(prev => ({ ...prev, ...profileRes.data }));
-        if (profileRes.data.updated_at) {
-          setLastUpdated(new Date(profileRes.data.updated_at).toLocaleDateString());
-        }
-      } catch {
-        // Fallback: Try to fetch just user credentials
-        try {
-          const credsRes = await axios.get(`http://localhost:8000/auth/user/${userId}`);
-          setFormData(prev => ({
-            ...prev,
-            email: prev.email || credsRes.data.email,
-          }));
-        } catch {
-          setStatus(prev => ({ ...prev, error: "Failed to load user email." }));
-        }
-      } finally {
-        setStatus(prev => ({ ...prev, loading: false }));
-=======
   const fetchProfile = useCallback(async () => {
     if (!userId || userId === "undefined") return;
     setStatus(prev => ({ ...prev, loading: true }));
@@ -178,7 +119,6 @@ const ProfilePage: React.FC = () => {
       setFormData(prev => ({ ...prev, ...profileRes.data, skills: skillsData }));
       if (profileRes.data.updated_at) {
         setLastUpdated(new Date(profileRes.data.updated_at).toLocaleDateString());
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
       }
     } catch (profileError) {
       console.error("Failed to load user profile:", profileError);
@@ -366,115 +306,6 @@ const ProfilePage: React.FC = () => {
       {status.loading && !formData.email ? (
         <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
       ) : (
-<<<<<<< HEAD
-        <Grid container spacing={3}>
-          {/* Account summary card */}
-          <Grid size={12}>
-            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, background: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[50] }}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <BusinessIcon color="primary" />
-                <Typography variant="h6" color="text.primary">Account Information</Typography>
-              </Box>
-              <Divider sx={{ mb: 2 }} />
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Typography variant="subtitle2" color="text.secondary">Email Address</Typography>
-                  <Typography variant="body1" fontWeight="medium" mb={1}>{formData.email || "Not available"}</Typography>
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Typography variant="subtitle2" color="text.secondary">Last Updated</Typography>
-                  <Typography variant="body1" fontWeight="medium">{lastUpdated}</Typography>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Grid>
-
-          {/* Full editable form */}
-          <Grid size={12}>
-            <Card elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
-              <Box sx={{ bgcolor: theme.palette.primary.main, color: 'white', py: 2, px: 3 }}>
-                <Typography variant="h6">Personal Details</Typography>
-              </Box>
-              <CardContent sx={{ p: 3 }}>
-                <Grid container spacing={3}>
-                  {/* Dynamic text fields */}
-                  {stringFields.map((field) => (
-                    <Grid size={{ xs: 12, sm: field === "preferences" ? 12 : 6 }} key={field}>
-                      <InputField
-                        name={field}
-                        label={field.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
-                        value={(formData[field] ?? "") as string}
-                        onChange={handleChange}
-                        fullWidth
-                      />
-                    </Grid>
-                  ))}
-
-                  {/* Skill selection */}
-                  <Grid size={12}>
-                    <MultiInputField
-                      label="Your Skills"
-                      name="skills"
-                      value={formData.skills}
-                      onChange={handleArrayChange}
-                    />
-                  </Grid>
-
-                  {/* Date + State dropdown */}
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <InputField
-                      label="Availability"
-                      name="availability"
-                      value={formData.availability || ""}
-                      onChange={handleChange}
-                      type="date"
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <FormControl fullWidth>
-                      <InputLabel>State</InputLabel>
-                      <Select
-                        name="state"
-                        value={formData.state || ""}
-                        onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
-                        label="State"
-                        required
-                      >
-                        {stateOptions.map((state) => (
-                          <MenuItem key={state.code} value={state.code}>
-                            {state.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
-
-                {/* Save/Delete buttons */}
-                <Box mt={4} display="flex" gap={2} flexDirection={isMobile ? 'column' : 'row'} justifyContent="space-between">
-                  <SubmitButton
-                    label="Save Profile"
-                    onClick={handleSubmit}
-                    disabled={status.loading}
-                    startIcon={<SaveIcon />}
-                    sx={{ flex: 3, py: 1.2 }}
-                  />
-                  <SubmitButton
-                    label="Delete Profile"
-                    onClick={handleDelete}
-                    variant="outlined"
-                    color="error"
-                    startIcon={<DeleteIcon />}
-                    disabled={status.loading}
-                    sx={{ flex: 1, py: 1.2 }}
-                  />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-=======
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <AccountInfoCard
             email={formData.email}
@@ -517,7 +348,6 @@ const ProfilePage: React.FC = () => {
             </CardContent>
           </Card>
         </Box>
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
       )}
 
       {/* Feedback snackbar */}

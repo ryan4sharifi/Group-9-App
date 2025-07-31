@@ -100,15 +100,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-<<<<<<< HEAD
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://your-frontend-domain.com"
-    ],
-=======
     allow_origins=["http://localhost:3000"],  
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -144,65 +136,6 @@ async def root():
         ]
     }
 
-<<<<<<< HEAD
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    db_health = await check_database_health()
-    return {
-        "status": "healthy",
-        "timestamp": "2024-01-01T00:00:00Z",
-        "database": db_health,
-        "websocket_connections": len(manager.active_connections)
-    }
-
-# WebSocket endpoint for real-time notifications
-@app.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: str):
-    await manager.connect(websocket, user_id)
-    try:
-        while True:
-            data = await websocket.receive_text()
-            # Handle incoming messages if needed
-            message = json.loads(data)
-            if message.get("type") == "ping":
-                await websocket.send_text(json.dumps({"type": "pong"}))
-    except WebSocketDisconnect:
-        manager.disconnect(user_id)
-    except Exception as e:
-        print(f"WebSocket error for user {user_id}: {e}")
-        manager.disconnect(user_id)
-
-# API route registration
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(profile.router, prefix="/api", tags=["Profile"])
-app.include_router(events.router, prefix="/api", tags=["Events"])
-app.include_router(history.router, prefix="/api", tags=["History"])
-app.include_router(match.router, prefix="/api", tags=["Matching"])
-app.include_router(notifications.router, prefix="/api", tags=["Notifications"])
-app.include_router(report.router, prefix="/api", tags=["Reports"])
-app.include_router(contact.router, prefix="/api", tags=["Contact"])
-
-# Real-time notification endpoint
-@app.post("/api/notify-realtime")
-async def notify_realtime(user_id: str, message: str, current_user: dict = Depends(verify_token)):
-    """Send real-time notification via WebSocket"""
-    if current_user["role"] != "admin":
-        return {"error": "Admin access required"}
-    
-    notification_data = {
-        "type": "notification",
-        "message": message,
-        "timestamp": "2024-01-01T00:00:00Z"
-    }
-    
-    await manager.send_personal_message(json.dumps(notification_data), user_id)
-    return {"message": "Real-time notification sent"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
-=======
 # 🔌 Register API route modules with appropriate prefixes
 app.include_router(auth.router, prefix="/auth")
 app.include_router(profile.router, prefix="/api")
@@ -211,4 +144,3 @@ app.include_router(history.router, prefix="/api")
 app.include_router(match.router, prefix="/api")
 app.include_router(notifications.router, prefix="/api")
 app.include_router(report.router, prefix="/api")
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a

@@ -36,13 +36,8 @@ const AppRoutes = () => {
 
   const isLoggedIn = !!userId;
 
-<<<<<<< HEAD
-  if (loading) return null;
-  
-=======
   if (loading) return null; // or a spinner if preferred
 
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
   return (
     <>
       <Navbar />

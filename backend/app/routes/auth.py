@@ -3,13 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field, constr
 from enum import Enum
-<<<<<<< HEAD
-from passlib.hash import bcrypt
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
-=======
 from passlib.hash import bcrypt 
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
 from app.supabase_client import supabase
 import os
 
@@ -113,12 +107,7 @@ async def register(user: UserRegister):
         if existing.data:
             raise HTTPException(status_code=400, detail="Email already registered")
 
-<<<<<<< HEAD
-        # Hash the password using bcrypt
-        hashed_password = bcrypt.hash(user.password)
-=======
         hashed_password = bcrypt.hash(user.password) # Using bcrypt from passlib.hash directly
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
 
         # Insert new user into Supabase
         result = supabase.table("user_credentials").insert({
@@ -158,65 +147,6 @@ async def register(user: UserRegister):
             # For now, we'll just log and let registration proceed.
 
         return {
-<<<<<<< HEAD
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user_id": user_id,
-            "role": user.role.value
-        }
-    except Exception as e:
-        # Generic error handling
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Login route - verifies credentials and returns user ID and role
-@router.post("/login", response_model=Token)
-async def login(user: UserLogin):
-    try:
-        # Get user by email from Supabase
-        result = supabase.table("user_credentials").select("*").eq("email", user.email).execute()
-        if not result.data:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-
-        db_user = result.data[0]
-
-        # Verify hashed password
-        if not bcrypt.verify(user.password, db_user["password"]):
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-
-        # Create JWT token
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": db_user["id"], "role": db_user.get("role", "volunteer")},
-            expires_delta=access_token_expires
-        )
-
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user_id": db_user["id"],
-            "role": db_user.get("role", "volunteer")
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Fetch user by ID for frontend session persistence
-@router.get("/user/{user_id}")
-async def get_user_by_id(user_id: str, current_user: dict = Depends(verify_token)):
-    """Get user by ID - protected route"""
-    if current_user["user_id"] != user_id and current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to access this user")
-    
-    result = supabase.table("user_credentials").select("email", "role").eq("id", user_id).execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return result.data[0]
-
-@router.post("/verify-token")
-async def verify_token_endpoint(current_user: dict = Depends(verify_token)):
-    """Verify token validity"""
-    return {"valid": True, "user_id": current_user["user_id"], "role": current_user["role"]}
-=======
             "message": "User registered successfully",
             "id": user_id,
             "role": user.role.value
@@ -300,4 +230,3 @@ async def delete_user_account(user_id: str):
         # Catch any other unexpected errors during the deletion process
         print(f"SERVER ERROR during account deletion for {user_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete account: {str(e)}")
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a

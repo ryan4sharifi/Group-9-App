@@ -6,9 +6,6 @@ Assignment 2:
 
 https://docs.google.com/document/d/1iorNtYke5R1Ilfmv1B4KPMxZDOGHoQmvh7iSQ01u00w/edit?usp=sharing
 
-<<<<<<< HEAD
-Assignment 3: https://docs.google.com/document/d/1pGo0U-ePS8QuLlbAJs4Kc32T8k6JWjjYT1h7XNXBKHc/edit?usp=sharing
-=======
 Assignment 3:
 
 https://docs.google.com/document/d/1pGo0U-ePS8QuLlbAJs4Kc32T8k6JWjjYT1h7XNXBKHc/edit?usp=sharing
@@ -16,4 +13,3 @@ https://docs.google.com/document/d/1pGo0U-ePS8QuLlbAJs4Kc32T8k6JWjjYT1h7XNXBKHc/
 Assignment 4: 
 
 https://docs.google.com/document/d/1Ke-vyjBsujOTYem-zEhegka6twNFZoLvB8amq0Ve1ow/edit?usp=sharing
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a

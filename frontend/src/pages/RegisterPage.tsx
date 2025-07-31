@@ -19,18 +19,6 @@ import InputField from "../components/inputs/InputField";
 import SubmitButton from "../components/buttons/SubmitButton";
 import { useUser } from "../context/UserContext";
 
-<<<<<<< HEAD
-// Register page component
-const RegisterPage = () => {
-  // Form state for email, password, and user role
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    role: "volunteer", // default role
-  });
-
-  const [error, setError] = useState<string | string[] | null>(null);
-=======
 interface FormData {
   email: string;
   password: string;
@@ -54,7 +42,6 @@ const RegisterPage = () => {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [apiError, setApiError] = useState<string | string[] | null>(null);
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
   const navigate = useNavigate();
   const { setUserId, setRole } = useUser(); // Context setters for session
 
@@ -130,19 +117,11 @@ const RegisterPage = () => {
       setUserId(userId);
       setRole(role);
 
-<<<<<<< HEAD
-      // Create empty profile after registration
-      await axios.post(`http://localhost:8000/api/profile/${userId}`, {});
-
-      setError(null);
-      navigate("/profile"); // Redirect to profile page
-=======
       // --- UPDATED: Send the required 'skills' field as an empty array ---
       await axios.post(`http://localhost:8000/api/profile/${userId}`, { skills: [] });
       // --- END UPDATE ---
 
       navigate("/profile");
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
     } catch (err: any) {
       const detail = err.response?.data?.detail;
 
@@ -185,12 +164,9 @@ const RegisterPage = () => {
             type="email"
             value={formData.email}
             onChange={handleInputChange}
-<<<<<<< HEAD
-=======
             error={!!errors.email}
             helperText={errors.email}
             required
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
           />
 
           <InputField
@@ -199,13 +175,6 @@ const RegisterPage = () => {
             type="password"
             value={formData.password}
             onChange={handleInputChange}
-<<<<<<< HEAD
-          />
-
-          {/* Role selection */}
-          <FormControl fullWidth>
-            <InputLabel id="role-label">Select Role</InputLabel>
-=======
             error={!!errors.password}
             helperText={errors.password}
             required
@@ -224,7 +193,6 @@ const RegisterPage = () => {
 
           <FormControl fullWidth error={!!errors.role}>
             <InputLabel id="role-label" required>Select Role</InputLabel>
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
             <Select
               labelId="role-label"
               name="role"
@@ -235,20 +203,6 @@ const RegisterPage = () => {
               <MenuItem value="volunteer">Volunteer</MenuItem>
               <MenuItem value="admin">Administrator</MenuItem>
             </Select>
-<<<<<<< HEAD
-          </FormControl>
-
-          {/* Error messages */}
-          {error && (
-            <Alert severity="error" variant="filled">
-              {Array.isArray(error)
-                ? error.map((msg, i) => <div key={i}>{msg}</div>)
-                : error}
-            </Alert>
-          )}
-
-          {/* Submit button */}
-=======
             {errors.role && <Typography color="error" variant="caption" sx={{ ml: 2, mt: 0.5 }}>{errors.role}</Typography>}
           </FormControl>
 
@@ -260,7 +214,6 @@ const RegisterPage = () => {
             </Alert>
           )}
 
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
           <Box mt={2}>
             <SubmitButton
               label="Register"

@@ -66,29 +66,17 @@ async def update_event(event_id: str, event: Event, user_id: str):
 async def delete_event(event_id: str, user_id: str):
     verify_admin(user_id)
     try:
-<<<<<<< HEAD
-        # Step 1: Get event name
-=======
         # Get event name for notifications
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
         event_res = supabase.table("events").select("name").eq("id", event_id).single().execute()
         if not event_res.data:
             raise HTTPException(status_code=404, detail="Event not found")
         event_name = event_res.data["name"]
 
-<<<<<<< HEAD
-        # Step 2: Get all volunteer user_ids signed up
-        history_res = supabase.table("volunteer_history").select("user_id").eq("event_id", event_id).execute()
-        user_ids = [row["user_id"] for row in history_res.data or []]
-
-        # Step 3: Send cancellation notifications to volunteers
-=======
         # Get all volunteer signups (user_ids)
         history_res = supabase.table("volunteer_history").select("user_id").eq("event_id", event_id).execute()
         user_ids = [row["user_id"] for row in history_res.data or []]
 
         # Notify each user
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
         for uid in user_ids:
             supabase.table("notifications").insert({
                 "user_id": uid,
@@ -97,11 +85,7 @@ async def delete_event(event_id: str, user_id: str):
                 "is_read": False,
             }).execute()
 
-<<<<<<< HEAD
-        # Step 4: Delete related volunteer history
-=======
        
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
         supabase.table("volunteer_history").delete().eq("event_id", event_id).execute()
 
         #

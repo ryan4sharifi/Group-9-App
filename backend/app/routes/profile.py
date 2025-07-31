@@ -15,11 +15,7 @@ class UserProfileWithoutID(BaseModel):
     city: Optional[constr(max_length=100)] = None
     state: Optional[constr(min_length=2, max_length=2)] = None
     zip_code: Optional[constr(min_length=5, max_length=9)] = None
-<<<<<<< HEAD
-    skills: Optional[List[str]] = []  # Multi-select dropdown expected
-=======
     skills: List[str] 
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
     preferences: Optional[str] = None
     availability: Optional[date] = None
     role: Optional[constr(max_length=20)] = "volunteer"
@@ -28,20 +24,12 @@ class UserProfileWithoutID(BaseModel):
 @router.post("/profile/{user_id}")
 async def create_or_update_profile(user_id: str, profile: UserProfileWithoutID):
     try:
-<<<<<<< HEAD
-        data = profile.dict(exclude_none=True)  # Exclude empty fields
-        data["user_id"] = user_id
-        print("DATA RECEIVED:", data)
-
-        # Convert date to ISO format string for Supabase
-=======
        
         data = profile.dict(exclude_none=True)
         data["user_id"] = str(user_id) 
         print("DATA RECEIVED:", data)
 
       
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
         if "availability" in data and isinstance(data["availability"], date):
             data["availability"] = data["availability"].isoformat()
         
@@ -58,17 +46,6 @@ async def create_or_update_profile(user_id: str, profile: UserProfileWithoutID):
 @router.get("/profile/{user_id}")
 async def get_profile(user_id: str):
     try:
-<<<<<<< HEAD
-        # Get profile data from user_profiles
-        profile_res = supabase.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
-        profile_data = profile_res.data if profile_res and profile_res.data else {}
-
-        # Also fetch email and role from user_credentials
-        creds_res = supabase.table("user_credentials").select("email", "role").eq("id", user_id).maybe_single().execute()
-        creds_data = creds_res.data if creds_res and creds_res.data else {}
-
-        return {**profile_data, **creds_data}  # Merge both into one response
-=======
         
         profile_res = supabase.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
         profile_data = profile_res.data if profile_res and profile_res.data else {}
@@ -79,7 +56,6 @@ async def get_profile(user_id: str):
 
         
         return {**profile_data, **creds_data}
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
     except Exception as e:
         print("SERVER ERROR:", e) 
         raise HTTPException(status_code=500, detail=f"Failed to retrieve profile: {str(e)}")
@@ -93,19 +69,5 @@ async def delete_profile(user_id: str):
             raise HTTPException(status_code=404, detail="Profile not found or already deleted")
         return {"message": "Profile deleted", "data": response.data}
     except Exception as e:
-<<<<<<< HEAD
-        raise HTTPException(status_code=500, detail=f"Failed to delete profile: {str(e)}")
-
-# Admin-only endpoint to fetch all volunteers
-@router.get("/volunteers")
-async def get_all_volunteers():
-    """Get all volunteers for admin matching interface"""
-    try:
-        response = supabase.table("user_profiles").select("user_id, full_name, skills, email").execute()
-        return response.data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch volunteers: {str(e)}")
-=======
         print("SERVER ERROR:", e) 
         raise HTTPException(status_code=500, detail=f"Failed to delete profile: {str(e)}")
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a

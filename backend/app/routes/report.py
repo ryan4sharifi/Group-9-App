@@ -8,39 +8,6 @@ from app.routes.auth import verify_token
 
 router = APIRouter()
 
-<<<<<<< HEAD
-class ReportFilter(BaseModel):
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    event_id: Optional[str] = None
-    user_id: Optional[str] = None
-    status: Optional[str] = None
-
-class VolunteerReport(BaseModel):
-    user_id: str
-    full_name: str
-    email: str
-    total_events: int
-    completed_events: int
-    attendance_rate: float
-    skills: List[str]
-    recent_activity: List[Dict]
-
-class EventReport(BaseModel):
-    event_id: str
-    event_name: str
-    event_date: str
-    location: str
-    required_skills: List[str]
-    urgency: str
-    total_volunteers: int
-    attended_volunteers: int
-    completion_rate: float
-
-# Returns full volunteer participation data including user and event details
-=======
-
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
 @router.get("/reports/volunteers")
 async def volunteer_participation_report(
     filters: ReportFilter = None,
@@ -51,73 +18,6 @@ async def volunteer_participation_report(
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
-<<<<<<< HEAD
-        # Get volunteer history with joins
-        query = supabase.table("volunteer_history").select("*, user_profiles(*), events(*)")
-        
-        # Apply filters
-        if filters:
-            if filters.start_date:
-                query = query.gte("created_at", filters.start_date)
-            if filters.end_date:
-                query = query.lte("created_at", filters.end_date)
-            if filters.event_id:
-                query = query.eq("event_id", filters.event_id)
-            if filters.user_id:
-                query = query.eq("user_id", filters.user_id)
-            if filters.status:
-                query = query.eq("status", filters.status)
-        
-        history_data = query.execute()
-        
-        # Process data into report format
-        volunteer_stats = {}
-        
-        for record in history_data.data:
-            user_id = record["user_id"]
-            profile = record.get("user_profiles", {})
-            
-            if user_id not in volunteer_stats:
-                volunteer_stats[user_id] = {
-                    "user_id": user_id,
-                    "full_name": profile.get("full_name", "Unknown"),
-                    "email": profile.get("email", "Unknown"),
-                    "total_events": 0,
-                    "completed_events": 0,
-                    "skills": profile.get("skills", []),
-                    "recent_activity": []
-                }
-            
-            volunteer_stats[user_id]["total_events"] += 1
-            if record["status"] in ["Attended", "Completed"]:
-                volunteer_stats[user_id]["completed_events"] += 1
-            
-            # Add to recent activity
-            volunteer_stats[user_id]["recent_activity"].append({
-                "event_name": record.get("events", {}).get("name", "Unknown"),
-                "date": record.get("events", {}).get("event_date", "Unknown"),
-                "status": record["status"]
-            })
-        
-        # Calculate attendance rates
-        reports = []
-        for user_id, stats in volunteer_stats.items():
-            attendance_rate = (stats["completed_events"] / stats["total_events"] * 100) if stats["total_events"] > 0 else 0
-            
-            reports.append(VolunteerReport(
-                user_id=stats["user_id"],
-                full_name=stats["full_name"],
-                email=stats["email"],
-                total_events=stats["total_events"],
-                completed_events=stats["completed_events"],
-                attendance_rate=round(attendance_rate, 2),
-                skills=stats["skills"],
-                recent_activity=stats["recent_activity"][:5]  # Last 5 activities
-            ))
-        
-        return {"reports": reports}
-    
-=======
         response = supabase.table("volunteer_history").select(
             "*, "
             "user_credentials!volunteer_history_user_id_fkey(" 
@@ -128,7 +28,6 @@ async def volunteer_participation_report(
 
         
         return {"report": response.data}
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
     except Exception as e:
         print(f"Backend Error in volunteer_participation_report: {e}") 
         raise HTTPException(status_code=500, detail=str(e))

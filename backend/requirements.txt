@@ -23,15 +23,7 @@ pydantic_core==2.33.2
 PyJWT==2.10.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
-<<<<<<< HEAD
-python-jose[cryptography]==3.3.0
-python-multipart==0.0.6
-realtime==2.5.3
-requests==2.31.0
-sendgrid==6.10.0
-=======
 realtime==2.6.0
->>>>>>> c7755f350084cea77c4aa9a597b23aaaaf0a615a
 six==1.17.0
 sniffio==1.3.1
 starlette==0.47.2
