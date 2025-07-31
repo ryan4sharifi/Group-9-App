@@ -5,6 +5,10 @@ from pydantic import BaseModel, EmailStr, Field, constr
 from enum import Enum
 from passlib.hash import bcrypt 
 from app.supabase_client import supabase
+from datetime import datetime, timedelta
+from typing import Optional
+import jwt
+from jwt.exceptions import PyJWTError as JWTError
 import os
 
 router = APIRouter()
@@ -38,7 +42,7 @@ class Token(BaseModel):
     user_id: str
     role: str
 
-def create_access_token(data: dict, expires_delta: timedelta = None):
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create JWT access token"""
     to_encode = data.copy()
     if expires_delta:
