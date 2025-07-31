@@ -5,8 +5,6 @@ from pydantic import BaseModel, EmailStr, Field, constr
 from enum import Enum
 from passlib.hash import bcrypt 
 from app.supabase_client import supabase
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
 import os
 
 router = APIRouter()
@@ -148,12 +146,11 @@ async def register(user: UserRegister):
             # You might choose to delete the user_credentials here if profile creation is mandatory
             # For now, we'll just log and let registration proceed.
 
-        return Token(
-            access_token=access_token,
-            token_type="bearer",
-            user_id=user_id,
-            role=user.role.value
-        )
+        return {
+            "message": "User registered successfully",
+            "id": user_id,
+            "role": user.role.value
+        }
     except Exception as e:
         # Check for unique constraint violation (e.g., email already exists)
         if "duplicate key value violates unique constraint" in str(e):

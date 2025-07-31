@@ -8,28 +8,9 @@ from app.routes.auth import verify_token
 
 router = APIRouter()
 
-# Model for report filtering
-class ReportFilter(BaseModel):
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    event_id: Optional[str] = None
-    user_id: Optional[str] = None
-
-# Model for event report response
-class EventReport(BaseModel):
-    event_id: str
-    event_name: str
-    event_date: str
-    location: str
-    required_skills: List[str]
-    urgency: str
-    total_volunteers: int
-    attended_volunteers: int
-    completion_rate: float
-
 @router.get("/reports/volunteers")
 async def volunteer_participation_report(
-    filters: Optional[ReportFilter] = None,
+    filters: ReportFilter = None,
     current_user: dict = Depends(verify_token)
 ):
     """Generate comprehensive volunteer participation report"""
@@ -54,7 +35,7 @@ async def volunteer_participation_report(
 # Returns a summary of all events with number of volunteers who participated
 @router.get("/reports/events")
 async def event_participation_summary(
-    filters: Optional[ReportFilter] = None,
+    filters: ReportFilter = None,
     current_user: dict = Depends(verify_token)
 ):
     """Generate event participation summary report"""
