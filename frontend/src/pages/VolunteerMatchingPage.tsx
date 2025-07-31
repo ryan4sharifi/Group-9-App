@@ -11,7 +11,6 @@ import {
   Stack,
   Alert,
   CircularProgress,
-  Grid,
   Paper,
   Divider,
   useTheme,
@@ -192,14 +191,21 @@ const VolunteerMatchingPage: React.FC = () => {
           </Typography>
         </Paper>
       ) : (
-        <Grid container spacing={3}>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: {
+            xs: '1fr',
+            md: 'repeat(2, 1fr)',
+            lg: 'repeat(3, 1fr)'
+          },
+          gap: 3
+        }}>
           {matchedEvents.map((event) => {
             const matchingSkills = getMatchingSkills(event.required_skills);
             const matchPercentage = Math.round((matchingSkills.length / event.required_skills.length) * 100);
             
             return (
-              <Grid item xs={12} md={6} lg={4} key={event.id}>
-                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Card key={event.id} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <CardContent sx={{ flexGrow: 1 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                       <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
@@ -299,10 +305,9 @@ const VolunteerMatchingPage: React.FC = () => {
                     />
                   </CardActions>
                 </Card>
-              </Grid>
             );
           })}
-        </Grid>
+        </Box>
       )}
     </Container>
   );

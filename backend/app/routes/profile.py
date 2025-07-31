@@ -46,15 +46,24 @@ async def create_or_update_profile(user_id: str, profile: UserProfileWithoutID):
 @router.get("/profile/{user_id}")
 async def get_profile(user_id: str):
     try:
-        
-        profile_res = supabase.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
-        profile_data = profile_res.data if profile_res and profile_res.data else {}
+        # Get profile data - handle both real Supabase and mock database
+        try:
+            profile_res = supabase.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
+            profile_data = profile_res.data if profile_res and profile_res.data else {}
+        except AttributeError:
+            # Fallback for mock database that doesn't have maybe_single
+            profile_res = supabase.table("user_profiles").select("*").eq("user_id", user_id).execute()
+            profile_data = profile_res.data[0] if profile_res and profile_res.data else {}
 
-       
-        creds_res = supabase.table("user_credentials").select("email", "role").eq("id", user_id).maybe_single().execute()
-        creds_data = creds_res.data if creds_res and creds_res.data else {}
+        # Get credentials data - handle both real Supabase and mock database  
+        try:
+            creds_res = supabase.table("user_credentials").select("email, role").eq("id", user_id).maybe_single().execute()
+            creds_data = creds_res.data if creds_res and creds_res.data else {}
+        except AttributeError:
+            # Fallback for mock database that doesn't have maybe_single
+            creds_res = supabase.table("user_credentials").select("email, role").eq("id", user_id).execute()
+            creds_data = creds_res.data[0] if creds_res and creds_res.data else {}
 
-        
         return {**profile_data, **creds_data}
     except Exception as e:
         print("SERVER ERROR:", e) 

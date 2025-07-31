@@ -12,7 +12,6 @@ import ReportPage from './pages/ReportPage';
 import HomePage from './pages/HomePage';
 import EventsPage from './pages/EventsPage';
 import VolunteerMatchingPage from './pages/VolunteerMatchingPage';
-import ReportPage from './pages/ReportPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import Navbar from './components/layout/Navbar';

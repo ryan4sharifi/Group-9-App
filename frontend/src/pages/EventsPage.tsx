@@ -17,7 +17,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Grid,
   IconButton,
   Divider,
   useTheme,
@@ -214,10 +213,17 @@ const EventsPage: React.FC = () => {
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
 
-      <Grid container spacing={3}>
+      <Box sx={{ 
+        display: 'grid', 
+        gridTemplateColumns: {
+          xs: '1fr',
+          md: 'repeat(2, 1fr)',
+          lg: 'repeat(3, 1fr)'
+        },
+        gap: 3
+      }}>
         {events.map((event) => (
-          <Grid item xs={12} md={6} lg={4} key={event.id}>
-            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Card key={event.id} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <CardContent sx={{ flexGrow: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                   <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
@@ -283,9 +289,8 @@ const EventsPage: React.FC = () => {
                 </CardActions>
               )}
             </Card>
-          </Grid>
         ))}
-      </Grid>
+      </Box>
 
       {/* Create/Edit Event Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
@@ -377,7 +382,12 @@ const EventsPage: React.FC = () => {
           <Button onClick={handleCloseDialog}>Cancel</Button>
           <SubmitButton
             label={editingEvent ? 'Update Event' : 'Create Event'}
-            onClick={handleSubmit}
+            onClick={() => {
+              const syntheticEvent = {
+                preventDefault: () => {},
+              } as React.FormEvent;
+              handleSubmit(syntheticEvent);
+            }}
             variant="contained"
             fullWidth={false}
           />

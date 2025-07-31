@@ -5,6 +5,11 @@ from pydantic import BaseModel, EmailStr, Field, constr
 from enum import Enum
 from passlib.hash import bcrypt 
 from app.supabase_client import supabase
+from datetime import datetime, timedelta
+from typing import Optional
+# from jose import JWTError, jwt  # OLD: python-jose library
+import jwt
+from jwt.exceptions import PyJWTError as JWTError  # NEW: PyJWT library (team standard)
 import os
 
 router = APIRouter()
@@ -147,8 +152,9 @@ async def register(user: UserRegister):
             # For now, we'll just log and let registration proceed.
 
         return {
-            "message": "User registered successfully",
-            "id": user_id,
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user_id": user_id,
             "role": user.role.value
         }
     except Exception as e:
@@ -182,7 +188,7 @@ async def login(user: UserLogin):
 @router.get("/user/{user_id}")
 async def get_user_by_id(user_id: str):
     try:
-        result = supabase.table("user_credentials").select("email", "role").eq("id", user_id).execute()
+        result = supabase.table("user_credentials").select("email, role").eq("id", user_id).execute()
 
         if not result.data:
             raise HTTPException(status_code=404, detail="User not found")

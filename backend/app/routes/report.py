@@ -8,6 +8,23 @@ from app.routes.auth import verify_token
 
 router = APIRouter()
 
+class ReportFilter(BaseModel):
+    """Filter parameters for reports"""
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    status: Optional[str] = None
+    user_id: Optional[str] = None
+
+class EventReport(BaseModel):
+    """Event report model"""
+    event_id: str
+    event_name: str
+    event_date: str
+    location: str
+    total_volunteers: int
+    attended_volunteers: int
+    attendance_rate: float
+
 @router.get("/reports/volunteers")
 async def volunteer_participation_report(
     filters: ReportFilter = None,
