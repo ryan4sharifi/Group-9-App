@@ -4,7 +4,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from app.routes import (
-    auth, profile, events, history, match, notifications, report, contact
+    auth, profile, events, history, match, notifications, report, contact, states
 )
 from app.supabase_client import supabase, check_database_health
 from app.routes.auth import verify_token
@@ -144,3 +144,5 @@ app.include_router(history.router, prefix="/api")
 app.include_router(match.router, prefix="/api")
 app.include_router(notifications.router, prefix="/api")
 app.include_router(report.router, prefix="/api")
+app.include_router(contact.router, prefix="/api")
+app.include_router(states.router, prefix="/api")

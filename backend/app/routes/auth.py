@@ -7,9 +7,8 @@ from passlib.hash import bcrypt
 from app.supabase_client import supabase
 from datetime import datetime, timedelta
 from typing import Optional
-# from jose import JWTError, jwt  # OLD: python-jose library
 import jwt
-from jwt.exceptions import PyJWTError as JWTError  # NEW: PyJWT library (team standard)
+from jwt.exceptions import PyJWTError as JWTError
 import os
 
 router = APIRouter()
@@ -43,7 +42,7 @@ class Token(BaseModel):
     user_id: str
     role: str
 
-def create_access_token(data: dict, expires_delta: timedelta = None):
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create JWT access token"""
     to_encode = data.copy()
     if expires_delta:
@@ -188,7 +187,7 @@ async def login(user: UserLogin):
 @router.get("/user/{user_id}")
 async def get_user_by_id(user_id: str):
     try:
-        result = supabase.table("user_credentials").select("email, role").eq("id", user_id).execute()
+        result = supabase.table("user_credentials").select("email", "role").eq("id", user_id).execute()
 
         if not result.data:
             raise HTTPException(status_code=404, detail="User not found")
