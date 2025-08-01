@@ -21,6 +21,8 @@ import AdminVolunteerMatchingPage from './pages/AdminVolunteerMatchingPage';
 
 import { UserProvider, useUser } from './context/UserContext';
 
+import { CustomThemeProvider } from './components/layout/ThemeContext'; // 👈 IMPORT YOUR THEME CONTEXT
+
 const AppRoutes = () => {
   const { userId, role, setUserId } = useUser();
   const [loading, setLoading] = useState(true);
@@ -66,12 +68,13 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <UserProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </UserProvider>
+    <CustomThemeProvider> 
+      <UserProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </UserProvider>
+    </CustomThemeProvider>
   );
 }
-
 export default App;

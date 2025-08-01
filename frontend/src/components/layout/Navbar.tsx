@@ -14,6 +14,10 @@ import {
 } from '@mui/icons-material';
 import { useUser } from '../../context/UserContext';
 import NotificationBell from './NotificationBell'; //NTran
+// added 
+import { Brightness4, Brightness7 } from '@mui/icons-material';
+import { useColorMode } from './ThemeContext'; // 
+
 
 interface NavItem {
   label: string;
@@ -28,6 +32,8 @@ const Navbar: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:1080px)'); 
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+  const { toggleColorMode } = useColorMode(); // added 
+  const currentTheme = theme.palette.mode; // added
   const { userId, setUserId } = useUser();
   const isLoggedIn = !!userId;
   const role = sessionStorage.getItem('role');
@@ -244,6 +250,10 @@ const Navbar: React.FC = () => {
               )}
             </Box>
           )}
+          <IconButton onClick={toggleColorMode} sx={{ ml: 1 }} color="inherit">
+            {currentTheme === 'dark' ? <Brightness7 /> : <Brightness4 />}
+          </IconButton>
+
         </Toolbar>
       </Container>
     </AppBar>

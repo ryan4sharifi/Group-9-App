@@ -156,34 +156,41 @@ describe('LoginPage', () => {
 
   // Test Case 6: Shows general API error message on failed login (e.g., Invalid credentials from backend)
   test('shows general API error message on failed login', async () => {
-    // Mock a failed login response (e.g., 401 Invalid credentials)
-    (axios.post as jest.Mock).mockRejectedValueOnce({
-      response: {
-        data: { detail: 'Invalid credentials.' },
-        status: 401
-      }
-    });
-
-    render(
-      <Router>
-        <UserProvider>
-          <LoginPage />
-        </UserProvider>
-      </Router>
-    );
-
-    userEvent.type(screen.getByLabelText(/Email Address/i), 'wrong@example.com');
-    userEvent.type(screen.getByLabelText(/Password/i), 'wrongpassword');
-    userEvent.click(screen.getByRole('button', { name: /Sign In/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-      expect(screen.getByText(/Invalid credentials./i)).toBeInTheDocument();
-    });
-
-    // Ensure session storage is NOT set on failure
-    expect(sessionStorage.getItem('user_id')).toBeNull();
+  // Make axios.post fail with "Invalid credentials" error
+  (axios.post as jest.Mock).mockRejectedValueOnce({
+    response: {
+      data: { detail: 'Invalid credentials.' },
+      status: 401,
+    },
   });
+
+  // Show the login page
+  render(
+    <Router>
+      <UserProvider>
+        <LoginPage />
+      </UserProvider>
+    </Router>
+  );
+
+  // Enter wrong email and password
+  userEvent.type(screen.getByLabelText(/Email Address/i), 'wrong@example.com');
+  userEvent.type(screen.getByLabelText(/Password/i), 'wrongpassword');
+
+  // Click the "Sign In" button
+  userEvent.click(screen.getByRole('button', { name: /Sign In/i }));
+
+  // Wait until the error message appears
+  await waitFor(() => {
+    const alert = screen.getByRole('alert');
+    expect(alert).toBeInTheDocument();
+    expect(alert).toHaveTextContent(/Invalid credentials./i);
+  });
+
+  // Check session storage does NOT have user_id after failed login
+  expect(sessionStorage.getItem('user_id')).toBeNull();
+});
+
 
   // Test Case 7: Navigates to register page when "Sign up" link is clicked
   test('navigates to register page when "Sign up" link is clicked', async () => {

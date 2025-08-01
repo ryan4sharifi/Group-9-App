@@ -74,9 +74,20 @@ const HomePage: React.FC = () => {
         <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
           Volunteer Management Platform
         </Typography>
-        <Typography variant="h5" color="text.secondary" paragraph sx={{ maxWidth: '800px', mx: 'auto', mb: 4 }}>
+        <Typography
+          variant="h5"
+          paragraph
+          sx={{
+            color: theme.palette.mode === 'dark' ? '#5e5efbff ' : 'text.secondary',
+            maxWidth: '800px',
+            mx: 'auto',
+            mb: 4
+          }}
+        >
           Streamline your volunteer operations, maximize impact, and build stronger communities together.
         </Typography>
+
+
         <Button
           variant="contained"
           size="large"
@@ -91,9 +102,19 @@ const HomePage: React.FC = () => {
           size="large"
           component={Link}
           to="/about"
+          sx={{
+            backgroundColor: theme.palette.mode === 'dark' ? '#333' : 'transparent',
+            color: theme.palette.mode === 'dark' ? '#fff' : 'inherit',
+            borderColor: theme.palette.mode === 'dark' ? '#888' : 'inherit',
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' ? '#444' : theme.palette.action.hover,
+              borderColor: theme.palette.primary.main
+            }
+          }}
         >
           Learn More
         </Button>
+
       </Box>
 
       <Typography variant="h4" component="h2" gutterBottom sx={{ mb: 4, textAlign: 'center' }}>
@@ -145,7 +166,17 @@ const HomePage: React.FC = () => {
         ))}
       </Box>
 
-      <Box sx={{ bgcolor: 'primary.light', p: 4, borderRadius: 2, color: 'white', textAlign: 'center', mb: 6 }}>
+      <Box
+        sx={{
+          bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'primary.light',
+          p: 4,
+          borderRadius: 2,
+          color: theme.palette.mode === 'dark' ? 'grey.100' : 'white',
+          textAlign: 'center',
+          mb: 6
+        }}
+      >
+
         <Typography variant="h5" component="p" gutterBottom>
           Ready to transform your volunteer management?
         </Typography>
