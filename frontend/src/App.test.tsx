@@ -38,7 +38,7 @@ describe('App Component (Integration Tests)', () => {
     sessionStorage.clear();
   });
 
-  // Test Case 1: Renders HomePage by default when not logged in
+  // Test Case One: Renders HomePage by default when not logged in
   test('renders HomePage by default when not logged in', async () => {
     sessionStorage.clear(); // Ensure no user in session
 
@@ -203,5 +203,74 @@ describe('App Component (Integration Tests)', () => {
     expect(screen.getByRole('link', { name: /Events/i })).toBeInTheDocument();
   });
 
-  // Add more tests for other routes, logout, etc.
+  // logout test case
+  test('logout clears session and redirects to home', async () => {
+  sessionStorage.setItem('user_id', 'mock-user-id');
+  sessionStorage.setItem('role', 'volunteer');
+
+  render(
+    <Router>
+      <UserProvider>
+        <App />
+      </UserProvider>
+    </Router>
+  );
+
+  const logoutButton = screen.getByRole('button', { name: /Logout/i });
+  userEvent.click(logoutButton);
+
+  await waitFor(() => {
+    expect(screen.getByText(/Welcome to the Volunteer Portal/i)).toBeInTheDocument();
+    expect(sessionStorage.getItem('user_id')).toBeNull(); // confirm it's cleared
+  });
+});
+
+});
+
+// Navbar hides protected links after logout
+test('navbar hides protected links after logout', async () => {
+  sessionStorage.setItem('user_id', 'vol-id');
+  sessionStorage.setItem('role', 'volunteer');
+
+  render(
+    <Router>
+      <UserProvider>
+        <App />
+      </UserProvider>
+    </Router>
+  );
+
+  const logoutButton = screen.getByRole('button', { name: /Logout/i });
+  userEvent.click(logoutButton);
+
+  await waitFor(() => {
+    expect(screen.queryByRole('link', { name: /Profile/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Events/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Match/i })).not.toBeInTheDocument();
+  });
+});
+
+// shows loading state during async operations
+test('shows loading indicator when fetching data', async () => {
+  sessionStorage.setItem('user_id', 'user123');
+  sessionStorage.setItem('role', 'volunteer');
+
+  (axios.get as jest.Mock).mockImplementation(() => {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve({ data: {} });
+      }, 1000); // simulate delay
+    });
+  });
+
+  render(
+    <Router>
+      <UserProvider>
+        <App />
+      </UserProvider>
+    </Router>
+  );
+
+  // Expect some kind of loading text/spinner early
+  expect(screen.getByText(/Loading/i)).toBeInTheDocument(); // change text if needed
 });
