@@ -37,6 +37,7 @@ class UserLogin(BaseModel):
 
 # Model for token response
 class Token(BaseModel):
+    message: str
     access_token: str
     token_type: str
     user_id: str
@@ -151,6 +152,7 @@ async def register(user: UserRegister):
             # For now, we'll just log and let registration proceed.
 
         return {
+            "message": "Registration successful",
             "access_token": access_token,
             "token_type": "bearer",
             "user_id": user_id,
@@ -163,7 +165,7 @@ async def register(user: UserRegister):
         print(f"Registration server error: {e}") # Added for better debugging
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
-@router.post("/login")
+@router.post("/login", response_model=Token)
 async def login(user: UserLogin):
     try:
         result = supabase.table("user_credentials").select("*").eq("email", user.email).execute()
@@ -175,9 +177,16 @@ async def login(user: UserLogin):
         if not bcrypt.verify(user.password, db_user["password"]): # Using bcrypt from passlib.hash directly
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
+        # Create JWT token
+        access_token = create_access_token(
+            data={"sub": db_user["id"], "role": db_user.get("role", "volunteer")}
+        )
+
         return {
             "message": "Login successful",
-            "user_id": db_user["id"], # Renamed from 'id' to 'user_id' for consistency with frontend UserContext
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user_id": db_user["id"],
             "role": db_user.get("role", "volunteer")
         }
     except Exception as e:

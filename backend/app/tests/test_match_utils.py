@@ -16,7 +16,7 @@ def test_calculate_distance():
     destination = "456 Elm St, CityB"
     distance = calculate_distance(origin, destination)
     assert isinstance(distance, float)
-    assert 0.0 <= distance <= 50.0  # Mocked distance should be within range
+    assert 1.0 <= distance <= 25.0  # Updated range for fallback calculation
 
 def test_calculate_skill_match():
     user_skills = ["Python", "FastAPI", "SQL"]

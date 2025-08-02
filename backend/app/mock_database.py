@@ -13,6 +13,7 @@ MOCK_NOTIFICATIONS: Dict[str, Dict] = {}
 MOCK_HISTORY: Dict[str, Dict] = {}
 MOCK_CONTACT_MESSAGES: List[Dict] = []
 MOCK_STATES: Dict[str, Dict] = {}
+MOCK_DISTANCE_CACHE: Dict[str, Dict] = {}
 
 # SAMPLE HARDCODED DATA
 
@@ -75,7 +76,7 @@ SAMPLE_EVENTS = {
         "id": "event-001",
         "name": "Beach Cleanup Drive",
         "description": "Join us for a community beach cleanup to protect our marine environment and keep our beaches beautiful.",
-        "location": "Galveston Beach State Park, TX",
+        "location": "2704 8 Mile Rd, Galveston, TX 77554",
         "required_skills": ["Environmental Cleanup", "Physical Work"],
         "urgency": "High",
         "event_date": "2024-12-15",
@@ -85,7 +86,7 @@ SAMPLE_EVENTS = {
         "id": "event-002", 
         "name": "Food Bank Volunteer Day",
         "description": "Help sort, pack, and distribute food to families in need in our community.",
-        "location": "Houston Food Bank, 535 Portwall St, Houston, TX",
+        "location": "535 Portwall St, Houston, TX 77029",
         "required_skills": ["Organization", "Customer Service", "Food Service"],
         "urgency": "Medium",
         "event_date": "2024-12-20",
@@ -95,7 +96,7 @@ SAMPLE_EVENTS = {
         "id": "event-003",
         "name": "Community Teaching Workshop", 
         "description": "Teach basic computer skills to seniors in our community center.",
-        "location": "Community Center, 789 Elm St, Houston, TX",
+        "location": "6400 Bissonnet St, Houston, TX 77074",
         "required_skills": ["Teaching", "Technology", "Patience"],
         "urgency": "Low",
         "event_date": "2024-12-25",
@@ -147,6 +148,36 @@ SAMPLE_HISTORY = {
         "event_id": "event-002",
         "status": "Attended",
         "created_at": "2024-11-01T14:30:00"
+    }
+}
+
+# Sample distance cache data for testing
+SAMPLE_DISTANCE_CACHE = {
+    "distance-001": {
+        "id": "distance-001",
+        "user_id": "volunteer-001",
+        "event_id": "event-001",
+        "origin_address": "123 Main Street, Apt 4B, Houston, TX 77001",
+        "destination_address": "2704 8 Mile Rd, Galveston, TX 77554",
+        "distance_text": "32.4 mi",
+        "distance_value": 52151,  # meters
+        "duration_text": "41 mins",
+        "duration_value": 2460,  # seconds
+        "calculated_at": "2024-11-15T10:30:00",
+        "created_at": "2024-11-15T10:30:00"
+    },
+    "distance-002": {
+        "id": "distance-002",
+        "user_id": "volunteer-002",
+        "event_id": "event-002",
+        "origin_address": "456 Oak Avenue, Austin, TX 78701",
+        "destination_address": "535 Portwall St, Houston, TX 77029",
+        "distance_text": "165.2 mi",
+        "distance_value": 265869,  # meters
+        "duration_text": "2 hours 48 mins",
+        "duration_value": 10080,  # seconds
+        "calculated_at": "2024-11-15T11:00:00",
+        "created_at": "2024-11-15T11:00:00"
     }
 }
 
@@ -209,7 +240,7 @@ SAMPLE_STATES = {
 
 def initialize_mock_data():
     """Initialize all mock data - call this when app starts"""
-    global MOCK_USERS, MOCK_PROFILES, MOCK_EVENTS, MOCK_NOTIFICATIONS, MOCK_HISTORY
+    global MOCK_USERS, MOCK_PROFILES, MOCK_EVENTS, MOCK_NOTIFICATIONS, MOCK_HISTORY, MOCK_DISTANCE_CACHE
     
     MOCK_USERS.update(SAMPLE_USERS)
     MOCK_PROFILES.update(SAMPLE_PROFILES) 
@@ -217,6 +248,7 @@ def initialize_mock_data():
     MOCK_NOTIFICATIONS.update(SAMPLE_NOTIFICATIONS)
     MOCK_HISTORY.update(SAMPLE_HISTORY)
     MOCK_STATES.update(SAMPLE_STATES)
+    MOCK_DISTANCE_CACHE.update(SAMPLE_DISTANCE_CACHE)
     
     print("✅ Mock data initialized successfully")
 
@@ -248,7 +280,8 @@ class MockSupabaseTable:
             "events": MOCK_EVENTS,
             "notifications": MOCK_NOTIFICATIONS,
             "volunteer_history": MOCK_HISTORY,
-            "states": MOCK_STATES
+            "states": MOCK_STATES,
+            "distance_cache": MOCK_DISTANCE_CACHE
         }
     
     def select(self, columns: str = "*"):
@@ -364,6 +397,8 @@ class MockSupabaseQuery:
             MOCK_NOTIFICATIONS[record_id] = new_record
         elif self.table_name == "volunteer_history":
             MOCK_HISTORY[record_id] = new_record
+        elif self.table_name == "distance_cache":
+            MOCK_DISTANCE_CACHE[record_id] = new_record
             
         print(f"✅ Inserted record into {self.table_name}: {record_id}")
         return MockSupabaseResponse(data=[new_record])

@@ -51,6 +51,9 @@ def test_initialize_mock_data():
 
 def test_mock_data_structure():
     """Test that mock data has expected structure"""
+    # Initialize mock data first
+    initialize_mock_data()
+    
     # Check users
     for user_id, user in MOCK_USERS.items():
         assert "email" in user

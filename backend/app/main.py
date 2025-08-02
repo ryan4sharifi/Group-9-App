@@ -3,8 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 from app.routes import (
-    auth, profile, events, history, match, notifications, report, contact, states
+    auth, profile, events, history, match, notifications, report, contact, states, distance
 )
 from app.supabase_client import supabase, check_database_health
 from app.routes.auth import verify_token
@@ -146,3 +151,4 @@ app.include_router(notifications.router, prefix="/api")
 app.include_router(report.router, prefix="/api")
 app.include_router(contact.router, prefix="/api")
 app.include_router(states.router, prefix="/api")
+app.include_router(distance.router, prefix="/api")  # Added distance calculation routes

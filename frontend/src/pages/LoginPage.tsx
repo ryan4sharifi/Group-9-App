@@ -43,12 +43,13 @@ const LoginPage = () => {
         password: formData.password,
       });
 
-      // Extract user_id and role from response
-      const { user_id, role } = res.data;
+      // Extract user_id, role, and access_token from response
+      const { user_id, role, access_token } = res.data;
 
-      // Save session info in sessionStorage and global context
+      // Save session info in sessionStorage and localStorage, and global context
       sessionStorage.setItem("user_id", user_id);
       sessionStorage.setItem("role", role);
+      localStorage.setItem("token", access_token); // Store JWT token for API calls
       setUserId(user_id);
       setRole(role);
 

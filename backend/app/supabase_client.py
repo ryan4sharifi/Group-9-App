@@ -21,17 +21,28 @@ try:
 except ImportError:
     SUPABASE_AVAILABLE = False
 
-# Use mock database when environment variables are not available
-if not SUPABASE_URL or not SUPABASE_KEY or not SUPABASE_AVAILABLE:
-    if MOCK_AVAILABLE:
-        print("Using mock database (hardcoded values) for assignment compliance")  #Enhanced message
-        supabase = mock_supabase
-    else:
-        print("Neither Supabase nor mock database available")
-        supabase = None
+# Try to use Supabase database first, fall back to mock if needed
+if SUPABASE_URL and SUPABASE_KEY and SUPABASE_AVAILABLE:
+    try:
+        print("Attempting Supabase database connection...")
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        # Test the connection
+        test_result = supabase.table("user_credentials").select("id").limit(1).execute()
+        print("✅ Supabase database connection successful")
+    except Exception as e:
+        print(f"⚠️ Supabase connection failed: {e}")
+        if MOCK_AVAILABLE:
+            print("Falling back to mock database")
+            supabase = mock_supabase
+        else:
+            print("No fallback available")
+            supabase = None
+elif MOCK_AVAILABLE:
+    print("Using mock database (hardcoded values) for assignment compliance")  #Enhanced message
+    supabase = mock_supabase
 else:
-    print("Using Supabase database")
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    print("Neither Supabase nor mock database available")
+    supabase = None
 
 def get_supabase_client():
     """Get Supabase client - returns mock client if no environment variables or Supabase unavailable"""
@@ -50,7 +61,8 @@ async def check_database_health():
             # If using mock database, always return healthy
             if MOCK_AVAILABLE and not SUPABASE_URL:
                 return {"status": "healthy", "database": "mock"}
-            response = supabase.table("users").select("id").limit(1).execute()
+            # Check if user_credentials table exists (our actual table name)
+            response = supabase.table("user_credentials").select("id").limit(1).execute()
             return {"status": "healthy", "database": "supabase"}
         else:
             return {"status": "unhealthy", "database": "none"}

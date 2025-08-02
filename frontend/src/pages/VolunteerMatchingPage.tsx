@@ -22,10 +22,18 @@ import {
   Assignment as AssignmentIcon,
   NotificationAdd as NotifyIcon,
   CheckCircle as CheckIcon,
+  MyLocation as MyLocationIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useUser } from '../context/UserContext';
 import SubmitButton from '../components/buttons/SubmitButton';
+import DistanceDisplay from '../components/distance/DistanceDisplay';
+import DistanceFilter from '../components/distance/DistanceFilter';
+import { 
+  addDistanceToEvents, 
+  sortEventsByDistance, 
+  filterEventsByDistance 
+} from '../utils/distance';
 
 interface MatchedEvent {
   id: string;
@@ -35,6 +43,11 @@ interface MatchedEvent {
   location: string;
   required_skills: string[];
   urgency: 'low' | 'medium' | 'high';
+  distance_text?: string;
+  duration_text?: string;
+  distance_value?: number;
+  duration_value?: number;
+  distance_cached?: boolean;
 }
 
 interface UserSkills {
@@ -45,18 +58,62 @@ const VolunteerMatchingPage: React.FC = () => {
   const theme = useTheme();
   const { userId } = useUser();
   const [matchedEvents, setMatchedEvents] = useState<MatchedEvent[]>([]);
+  const [displayedEvents, setDisplayedEvents] = useState<MatchedEvent[]>([]);
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [distanceLoading, setDistanceLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [signingUp, setSigningUp] = useState<string | null>(null);
+  
+  // Distance filter states
+  const [maxDistance, setMaxDistance] = useState(25);
+  const [sortBy, setSortBy] = useState<'distance' | 'date' | 'name'>('distance');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [showNearbyOnly, setShowNearbyOnly] = useState(false);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
 
   useEffect(() => {
     if (userId) {
       fetchMatchedEvents();
       fetchUserSkills();
+      getUserLocation();
     }
   }, [userId]);
+
+  useEffect(() => {
+    applyFiltersAndSorting();
+  }, [matchedEvents, maxDistance, sortBy, sortOrder, showNearbyOnly]);
+
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Could not get user location:', error);
+        }
+      );
+    }
+  };
+
+  const applyFiltersAndSorting = () => {
+    let filteredEvents = [...matchedEvents];
+    
+    if (showNearbyOnly && userLocation) {
+      filteredEvents = filterEventsByDistance(filteredEvents, maxDistance);
+    }
+    
+    const sortedEvents = sortEventsByDistance(filteredEvents, {
+      sortBy,
+      sortOrder
+    });
+    setDisplayedEvents(sortedEvents);
+  };
 
   const fetchUserSkills = async () => {
     try {
@@ -70,11 +127,34 @@ const VolunteerMatchingPage: React.FC = () => {
   const fetchMatchedEvents = async () => {
     try {
       const response = await axios.get(`http://localhost:8000/api/matched_events/${userId}`);
-      setMatchedEvents(response.data.matched_events || []);
+      const eventsData = response.data.matched_events || [];
+      setMatchedEvents(eventsData);
+      
+      // Add distance information if user location is available
+      if (userLocation && userId) {
+        await addDistanceInfo(eventsData);
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to fetch matched events');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const addDistanceInfo = async (eventsData: MatchedEvent[]) => {
+    if (!userLocation || !userId) return;
+    
+    setDistanceLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      const eventsWithDistance = await addDistanceToEvents(eventsData, token);
+      setMatchedEvents(eventsWithDistance);
+    } catch (err) {
+      console.error('Error adding distance information:', err);
+    } finally {
+      setDistanceLoading(false);
     }
   };
 
@@ -151,6 +231,52 @@ const VolunteerMatchingPage: React.FC = () => {
         </Alert>
       )}
 
+      {/* Location Status */}
+      {!userLocation && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Box display="flex" alignItems="center" gap={1}>
+            <MyLocationIcon />
+            <Typography variant="body2">
+              Enable location access to see distance information and use distance-based filtering.
+            </Typography>
+            <Button 
+              size="small" 
+              onClick={getUserLocation}
+              variant="outlined"
+            >
+              Enable Location
+            </Button>
+          </Box>
+        </Alert>
+      )}
+
+      {distanceLoading && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <CircularProgress size={20} />
+            <Typography variant="body2">
+              Calculating distances to events...
+            </Typography>
+          </Box>
+        </Alert>
+      )}
+
+      {/* Distance Filters */}
+      {userLocation && matchedEvents.length > 0 && (
+        <DistanceFilter
+          maxDistance={maxDistance}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          showNearbyOnly={showNearbyOnly}
+          onMaxDistanceChange={setMaxDistance}
+          onSortByChange={setSortBy}
+          onSortOrderChange={setSortOrder}
+          onShowNearbyOnlyChange={setShowNearbyOnly}
+          nearbyEventsCount={displayedEvents.length}
+          totalEventsCount={matchedEvents.length}
+        />
+      )}
+
       {/* User Skills Display */}
       <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -177,7 +303,17 @@ const VolunteerMatchingPage: React.FC = () => {
       </Paper>
 
       {/* Matched Events */}
-      {matchedEvents.length === 0 ? (
+      {displayedEvents.length === 0 && matchedEvents.length > 0 && showNearbyOnly ? (
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <EventIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h6" gutterBottom>
+            No Nearby Matched Events
+          </Typography>
+          <Typography color="text.secondary">
+            No matched events found within {maxDistance} km. Try increasing the distance range.
+          </Typography>
+        </Paper>
+      ) : displayedEvents.length === 0 ? (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
           <EventIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" gutterBottom>
@@ -200,7 +336,7 @@ const VolunteerMatchingPage: React.FC = () => {
           },
           gap: 3
         }}>
-          {matchedEvents.map((event) => {
+          {displayedEvents.map((event) => {
             const matchingSkills = getMatchingSkills(event.required_skills);
             const matchPercentage = Math.round((matchingSkills.length / event.required_skills.length) * 100);
             
@@ -219,8 +355,8 @@ const VolunteerMatchingPage: React.FC = () => {
                       />
                     </Box>
 
-                    {/* Match Percentage */}
-                    <Box sx={{ mb: 2 }}>
+                    {/* Match Percentage and Distance */}
+                    <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       <Chip
                         label={`${matchPercentage}% Match`}
                         color="success"
@@ -228,6 +364,19 @@ const VolunteerMatchingPage: React.FC = () => {
                         size="small"
                         icon={<CheckIcon />}
                       />
+                      {userLocation && (event.distance_text || event.duration_text) && (
+                        <DistanceDisplay
+                          distance_text={event.distance_text}
+                          duration_text={event.duration_text}
+                          distance_value={event.distance_value}
+                          duration_value={event.duration_value}
+                          cached={event.distance_cached}
+                          urgency={event.urgency}
+                          variant="chip"
+                          size="small"
+                          showBothUnits={true}
+                        />
+                      )}
                     </Box>
                     
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -248,7 +397,22 @@ const VolunteerMatchingPage: React.FC = () => {
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <LocationIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{event.location}</Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1 }}>
+                          <Typography variant="body2">{event.location}</Typography>
+                          {/* Distance Information */}
+                          {userLocation && (event.distance_text || event.duration_text) && (
+                            <DistanceDisplay
+                              distance_text={event.distance_text}
+                              duration_text={event.duration_text}
+                              distance_value={event.distance_value}
+                              duration_value={event.duration_value}
+                              cached={event.distance_cached}
+                              urgency={event.urgency}
+                              variant="compact"
+                              showBothUnits={true}
+                            />
+                          )}
+                        </Box>
                       </Box>
                     </Stack>
 

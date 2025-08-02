@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -21,6 +21,7 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -31,11 +32,20 @@ import {
   CalendarToday as CalendarIcon,
   Assignment as AssignmentIcon,
   Close as CloseIcon,
+  MyLocation as MyLocationIcon,
+  Place as PlaceIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useUser } from '../context/UserContext';
 import SubmitButton from '../components/buttons/SubmitButton';
 import ConfirmDialog from '../components/common/ConfirmDialog';
+import DistanceDisplay from '../components/distance/DistanceDisplay';
+import DistanceFilter from '../components/distance/DistanceFilter';
+import { 
+  addDistanceToEvents, 
+  sortEventsByDistance, 
+  filterEventsByDistance 
+} from '../utils/distance';
 
 interface Event {
   id: string;
@@ -45,6 +55,11 @@ interface Event {
   location: string;
   required_skills: string[];
   urgency: 'low' | 'medium' | 'high';
+  distance_text?: string;
+  duration_text?: string;
+  distance_value?: number;
+  duration_value?: number;
+  distance_cached?: boolean;
 }
 
 const urgencyOptions = ['low', 'medium', 'high'];
@@ -62,11 +77,21 @@ const EventsPage: React.FC = () => {
   const isAdmin = role === 'admin';
   
   const [events, setEvents] = useState<Event[]>([]);
+  const [displayedEvents, setDisplayedEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [distanceLoading, setDistanceLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
+  
+  // Distance filter states
+  const [maxDistance, setMaxDistance] = useState(25);
+  const [sortBy, setSortBy] = useState<'distance' | 'date' | 'name'>('distance');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [showNearbyOnly, setShowNearbyOnly] = useState(false);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -80,18 +105,82 @@ const EventsPage: React.FC = () => {
 
   useEffect(() => {
     fetchEvents();
+    getUserLocation();
   }, []);
+
+  useEffect(() => {
+    applyFiltersAndSorting();
+  }, [events, maxDistance, sortBy, sortOrder, showNearbyOnly]);
+
+  // Add distance information when userLocation becomes available
+  useEffect(() => {
+    if (userLocation && userId && events.length > 0) {
+      addDistanceInfo(events);
+    }
+  }, [userLocation, userId, events.length]);
+
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Could not get user location:', error);
+          // Don't show error to user, distance features will just be disabled
+        }
+      );
+    }
+  };
 
   const fetchEvents = async () => {
     try {
       const response = await axios.get('http://localhost:8000/api/events');
-      setEvents(response.data);
+      const eventsData = response.data;
+      setEvents(eventsData);
+      
+      // Note: Distance information will be added via useEffect when userLocation is available
     } catch (err) {
       console.error('Error fetching events:', err);
       setError('Failed to fetch events');
     } finally {
       setLoading(false);
     }
+  };
+
+  const addDistanceInfo = async (eventsData: Event[]) => {
+    if (!userLocation || !userId) return;
+    
+    setDistanceLoading(true);
+    try {
+      // Get auth token
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      const eventsWithDistance = await addDistanceToEvents(eventsData, token);
+      setEvents(eventsWithDistance);
+    } catch (err) {
+      console.error('Error adding distance information:', err);
+    } finally {
+      setDistanceLoading(false);
+    }
+  };
+
+  const applyFiltersAndSorting = () => {
+    let filteredEvents = [...events];
+    
+    if (showNearbyOnly && userLocation) {
+      filteredEvents = filterEventsByDistance(filteredEvents, maxDistance);
+    }
+    
+    const sortedEvents = sortEventsByDistance(filteredEvents, {
+      sortBy,
+      sortOrder
+    });
+    setDisplayedEvents(sortedEvents);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,6 +302,63 @@ const EventsPage: React.FC = () => {
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
 
+      {/* Distance Filters */}
+      {userLocation && (
+        <DistanceFilter
+          maxDistance={maxDistance}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          showNearbyOnly={showNearbyOnly}
+          onMaxDistanceChange={setMaxDistance}
+          onSortByChange={setSortBy}
+          onSortOrderChange={setSortOrder}
+          onShowNearbyOnlyChange={setShowNearbyOnly}
+          nearbyEventsCount={displayedEvents.length}
+          totalEventsCount={events.length}
+        />
+      )}
+
+      {/* Location Status */}
+      {!userLocation && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Box display="flex" alignItems="center" gap={1}>
+            <MyLocationIcon />
+            <Typography variant="body2">
+              Enable location access to see distance information (in miles and km) for each event.
+            </Typography>
+            <Button 
+              size="small" 
+              onClick={getUserLocation}
+              variant="outlined"
+            >
+              Enable Location
+            </Button>
+          </Box>
+        </Alert>
+      )}
+
+      {/* Sign-in reminder for distance features */}
+      {userLocation && !userId && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography variant="body2">
+              Sign in to see distance calculations and use distance-based filtering for events.
+            </Typography>
+          </Box>
+        </Alert>
+      )}
+
+      {distanceLoading && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <CircularProgress size={20} />
+            <Typography variant="body2">
+              Calculating distances to events...
+            </Typography>
+          </Box>
+        </Alert>
+      )}
+
       <Box sx={{ 
         display: 'grid', 
         gridTemplateColumns: {
@@ -222,74 +368,119 @@ const EventsPage: React.FC = () => {
         },
         gap: 3
       }}>
-        {events.map((event) => (
-          <Card key={event.id} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
-                    {event.name}
-                  </Typography>
-                  <Chip
-                    label={event.urgency.toUpperCase()}
-                    size="small"
-                    color={getUrgencyColor(event.urgency) as any}
-                    variant="filled"
-                  />
-                </Box>
-                
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {event.description}
-                </Typography>
-
-                <Stack spacing={1} sx={{ mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CalendarIcon fontSize="small" color="action" />
-                    <Typography variant="body2">
-                      {new Date(event.event_date).toLocaleDateString()}
+        {displayedEvents.length === 0 ? (
+          <Box sx={{ 
+            gridColumn: '1 / -1', 
+            textAlign: 'center', 
+            py: 8,
+            bgcolor: 'grey.50',
+            borderRadius: 2
+          }}>
+            <EventIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              {events.length === 0 
+                ? 'No events available' 
+                : showNearbyOnly 
+                  ? `No events found within ${Math.round(maxDistance * 0.621371)} mi`
+                  : 'No events match your current filters'
+              }
+            </Typography>
+            {showNearbyOnly && events.length > 0 && (
+              <Typography variant="body2" color="text.secondary">
+                Try increasing the distance range or disable location filtering
+              </Typography>
+            )}
+          </Box>
+        ) : (
+          displayedEvents.map((event) => (
+            <Card key={event.id} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                    <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
+                      {event.name}
                     </Typography>
+                    <Chip
+                      label={event.urgency.toUpperCase()}
+                      size="small"
+                      color={getUrgencyColor(event.urgency) as any}
+                      variant="filled"
+                    />
                   </Box>
+                  
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    {event.description}
+                  </Typography>
+
+                  <Stack spacing={1} sx={{ mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CalendarIcon fontSize="small" color="action" />
+                      <Typography variant="body2">
+                        {new Date(event.event_date).toLocaleDateString()}
+                      </Typography>
+                    </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <LocationIcon fontSize="small" color="action" />
-                    <Typography variant="body2">{event.location}</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1 }}>
+                      <Typography variant="body2">{event.location}</Typography>
+                      {/* Distance Information */}
+                      {userLocation && userId && (event.distance_text || event.duration_text) && (
+                        <DistanceDisplay
+                          distance_text={event.distance_text}
+                          duration_text={event.duration_text}
+                          distance_value={event.distance_value}
+                          duration_value={event.duration_value}
+                          cached={event.distance_cached}
+                          urgency={event.urgency}
+                          variant="compact"
+                          showBothUnits={true}
+                        />
+                      )}
+                      {/* Show sign-in prompt when user not logged in but location available */}
+                      {userLocation && !userId && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <PlaceIcon fontSize="small" color="action" sx={{ fontSize: 14 }} />
+                          Sign in to see distance
+                        </Typography>
+                      )}
+                    </Box>
                   </Box>
-                </Stack>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                    Required Skills:
-                  </Typography>
-                  <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                    {event.required_skills.map((skill, index) => (
-                      <Chip
-                        key={index}
-                        label={skill}
-                        size="small"
-                        variant="outlined"
-                        sx={{ mb: 0.5 }}
-                      />
-                    ))}
-                  </Stack>
-                </Box>
-              </CardContent>
-              
-              {isAdmin && (
-                <CardActions sx={{ justifyContent: 'flex-end' }}>
-                  <IconButton onClick={() => handleEdit(event)} color="primary">
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton 
-                    onClick={() => {
-                      setEventToDelete(event.id);
-                      setDeleteConfirmOpen(true);
-                    }}
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </CardActions>
-              )}
-            </Card>
-        ))}
+                </Stack>                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                      Required Skills:
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                      {event.required_skills.map((skill, index) => (
+                        <Chip
+                          key={index}
+                          label={skill}
+                          size="small"
+                          variant="outlined"
+                          sx={{ mb: 0.5 }}
+                        />
+                      ))}
+                    </Stack>
+                  </Box>
+                </CardContent>
+                
+                {isAdmin && (
+                  <CardActions sx={{ justifyContent: 'flex-end' }}>
+                    <IconButton onClick={() => handleEdit(event)} color="primary">
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton 
+                      onClick={() => {
+                        setEventToDelete(event.id);
+                        setDeleteConfirmOpen(true);
+                      }}
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </CardActions>
+                )}
+              </Card>
+          ))
+        )}
       </Box>
 
       {/* Create/Edit Event Dialog */}
