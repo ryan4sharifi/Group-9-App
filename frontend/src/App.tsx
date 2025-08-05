@@ -47,12 +47,12 @@ const AppRoutes = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/events" element={<EventsPage />} /> 
-        <Route path="/match" element={isLoggedIn ? <VolunteerMatchingPage /> : <Navigate to="/login" />} />
+        <Route path="/match" element={isLoggedIn ? <MatchPage /> : <Navigate to="/login" />} />
         <Route path="/admin-matching" element={isLoggedIn && role === 'admin' ? <AdminVolunteerMatchingPage /> : <Navigate to="/login" />} />
         <Route path="/report" element={<ReportPage />}/>
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/history" element={isLoggedIn ? <VolunteerHistoryPage /> : <Navigate to="/login" />} />
+        <Route path="/history" element={isLoggedIn ? <HistoryPage /> : <Navigate to="/login" />} />
         <Route path="/notifications" element={isLoggedIn ? <NotificationsPage /> : <Navigate to="/login" />} />
         {/* Protected routes */}
         <Route path="/profile" element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" />} />

@@ -29,11 +29,16 @@ import { SelectChangeEvent } from "@mui/material";
 import usStates from '../data/usStates.json'; // Adjust path if your data directory is different
 
 
+// --- CHANGE 1: UPDATED INTERFACE TO MATCH BACKEND ROUTE ---
 interface EventData {
   id?: string;
   name: string;
   description: string;
-  location: string; // This will now store the 2-letter state code
+  address1: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zip_code?: string;
   required_skills: string[];
   urgency: string;
   event_date: Date | null;
@@ -42,7 +47,11 @@ interface EventData {
 interface FormErrors {
   name?: string;
   description?: string;
-  location?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
   required_skills?: string;
   urgency?: string;
   event_date?: string;
@@ -51,7 +60,11 @@ interface FormErrors {
 const defaultEvent: EventData = {
   name: "",
   description: "",
-  location: "", // Default to empty string for location
+  address1: "",
+  address2: "",
+  city: "",
+  state: "",
+  zip_code: "",
   required_skills: [],
   urgency: "",
   event_date: null,
@@ -92,11 +105,12 @@ const EventFormPage: React.FC = () => {
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  // NEW: Handler for Autocomplete (Location field)
-  const handleLocationChange = (event: React.SyntheticEvent, value: { label: string; value: string } | null) => {
-    setEvent(prev => ({ ...prev, location: value ? value.value : "" }));
-    setErrors(prev => ({ ...prev, location: undefined }));
+  // --- CHANGE 2: NEW HANDLER FOR AUTOCOMPLETE (STATE FIELD) ---
+  const handleStateChange = (event: React.SyntheticEvent, value: { label: string; value: string } | null) => {
+    setEvent(prev => ({ ...prev, state: value ? value.value : "" }));
+    setErrors(prev => ({ ...prev, state: undefined }));
   };
+  // --- END NEW HANDLER ---
 
   const handleDropdownChange = (e: SelectChangeEvent) => {
     const { name, value } = e.target;
@@ -114,9 +128,10 @@ const EventFormPage: React.FC = () => {
     setErrors((prev) => ({ ...prev, event_date: undefined }));
   };
 
+  // --- CHANGE 3: UPDATED VALIDATION FOR NEW ADDRESS FIELDS ---
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-    const { name, description, location, required_skills, urgency, event_date } = event;
+    const { name, description, address1, city, state, zip_code, required_skills, urgency, event_date } = event;
 
     if (!name.trim()) {
       newErrors.name = "Event Name is required.";
@@ -124,11 +139,19 @@ const EventFormPage: React.FC = () => {
     if (!description.trim()) {
       newErrors.description = "Description is required.";
     }
-    // Updated validation for location (now a state code)
-    if (!location.trim()) {
-      newErrors.location = "Location (State) is required.";
-    } else if (!usStates.some(state => state.value === location)) {
-        newErrors.location = "Please select a valid state from the list.";
+    if (!address1.trim()) {
+        newErrors.address1 = "Address Line 1 is required.";
+    }
+    if (!city.trim()) {
+        newErrors.city = "City is required.";
+    }
+    if (!state.trim()) {
+        newErrors.state = "State is required.";
+    } else if (!usStates.some(s => s.value === state)) {
+        newErrors.state = "Please select a valid state from the list.";
+    }
+    if (zip_code && !/^\d{5}(-\d{4})?$/.test(zip_code)) {
+        newErrors.zip_code = "Please enter a valid 5 or 9 digit zip code.";
     }
 
     if (!required_skills || required_skills.length === 0) {
@@ -152,6 +175,7 @@ const EventFormPage: React.FC = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  // --- END UPDATED VALIDATION ---
 
   const handleSubmit = async () => {
     if (!validateForm()) {
@@ -167,20 +191,22 @@ const EventFormPage: React.FC = () => {
         return;
       }
 
-      const formattedEvent = {
+      // --- CHANGE 4: UPDATED OBJECT TO SEND TO BACKEND ---
+      const eventToSubmit = {
         ...event,
         event_date: event.event_date?.toISOString().split("T")[0] || "",
       };
+      // --- END UPDATED OBJECT ---
 
       if (event.id) {
         await axios.put(
           `http://localhost:8000/api/events/${event.id}`,
-          formattedEvent,
+          eventToSubmit,
           { params: { user_id: userId } }
         );
         setStatus({ success: "Event updated successfully", error: "" });
       } else {
-        await axios.post("http://localhost:8000/api/events", formattedEvent, {
+        await axios.post("http://localhost:8000/api/events", eventToSubmit, {
           params: { user_id: userId },
         });
         setStatus({ success: "Event created successfully", error: "" });
@@ -198,7 +224,13 @@ const EventFormPage: React.FC = () => {
 
   const handleEdit = (evt: EventData) => {
     const skillsToEdit = Array.isArray(evt.required_skills) ? evt.required_skills : [];
-    setEvent({ ...evt, event_date: evt.event_date ? new Date(evt.event_date) : null, required_skills: skillsToEdit });
+    // --- CHANGE 5: UPDATED STATE WHEN EDITING AN EVENT ---
+    setEvent({
+        ...evt,
+        event_date: evt.event_date ? new Date(evt.event_date) : null,
+        required_skills: skillsToEdit
+    });
+    // --- END UPDATED STATE ---
     setErrors({});
   };
 
@@ -254,25 +286,71 @@ const EventFormPage: React.FC = () => {
                 />
               </Box>
               <Box sx={{ width: isMobile ? '100%' : '50%' }}>
-                {/* --- NEW: Autocomplete for Location (State) --- */}
+                 <InputField
+                    label="Address Line 1"
+                    name="address1"
+                    value={event.address1}
+                    onChange={handleChange}
+                    error={!!errors.address1}
+                    helperText={errors.address1}
+                    required
+                 />
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 2 }}>
+                <Box sx={{ width: isMobile ? '100%' : '50%' }}>
+                     <InputField
+                        label="Address Line 2 (Optional)"
+                        name="address2"
+                        value={event.address2}
+                        onChange={handleChange}
+                        error={!!errors.address2}
+                        helperText={errors.address2}
+                    />
+                </Box>
+                <Box sx={{ width: isMobile ? '100%' : '50%' }}>
+                    <InputField
+                        label="City"
+                        name="city"
+                        value={event.city}
+                        onChange={handleChange}
+                        error={!!errors.city}
+                        helperText={errors.city}
+                        required
+                    />
+                </Box>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 2 }}>
+              <Box sx={{ width: isMobile ? '100%' : '50%' }}>
+                {/* --- CHANGE 6: USE AUTOCOMPLETE FOR STATE --- */}
                 <Autocomplete
                   options={usStates}
                   getOptionLabel={(option) => option.label}
-                  value={usStates.find(state => state.value === event.location) || null}
-                  onChange={handleLocationChange}
+                  value={usStates.find(s => s.value === event.state) || null}
+                  onChange={handleStateChange}
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Location (State)"
+                      label="State"
                       margin="normal"
                       fullWidth
-                      error={!!errors.location}
-                      helperText={errors.location}
+                      error={!!errors.state}
+                      helperText={errors.state}
                       required
                     />
                   )}
                 />
-                {/* --- END NEW --- */}
+                {/* --- END CHANGE 6 --- */}
+              </Box>
+              <Box sx={{ width: isMobile ? '100%' : '50%' }}>
+                 <InputField
+                    label="Zip Code"
+                    name="zip_code"
+                    value={event.zip_code}
+                    onChange={handleChange}
+                    error={!!errors.zip_code}
+                    helperText={errors.zip_code}
+                 />
               </Box>
             </Box>
             <Box sx={{ width: '100%' }}>
@@ -390,12 +468,16 @@ const EventFormPage: React.FC = () => {
                     </Typography>
 
                     <Stack spacing={1}>
-                      {evt.location && (
+                      {/* --- CHANGE 7: UPDATED LOCATION DISPLAY --- */}
+                      {(evt.address1 || evt.city || evt.state) && (
                         <Box display="flex" alignItems="center" gap={1}>
                           <LocationOn fontSize="small" color="action" />
-                          <Typography variant="body2" color="text.secondary" noWrap>{usStates.find(s => s.value === evt.location)?.label || evt.location}</Typography> {/* Display full state name */}
+                          <Typography variant="body2" color="text.secondary">
+                            {evt.address1}, {evt.city}, {evt.state}
+                          </Typography>
                         </Box>
                       )}
+                      {/* --- END CHANGE 7 --- */}
 
                       {evt.event_date && (
                         <Box display="flex" alignItems="center" gap={1}>

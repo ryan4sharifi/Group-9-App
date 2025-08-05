@@ -1,10 +1,12 @@
+// src/components/inputs/InputField.tsx
+
 import React from 'react';
 import { TextField } from '@mui/material';
 
 interface InputFieldProps {
   label: string;
   name: string;
-  value: string;
+  value: string | undefined; // <-- CHANGE 1: Allow value to be undefined
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string;
   required?: boolean;
@@ -36,7 +38,8 @@ const InputField: React.FC<InputFieldProps> = ({
     <TextField
       label={label}
       name={name}
-      value={value}
+      // <-- CHANGE 2: Coalesce value with an empty string to satisfy TextField's prop type
+      value={value || ''} 
       onChange={onChange}
       type={type}
       required={required}
