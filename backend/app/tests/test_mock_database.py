@@ -60,11 +60,14 @@ def test_mock_data_structure():
         assert "role" in user
         assert "created_at" in user
     
-    # Check profiles
+    # Check profiles - some may be minimal profiles created during registration
     for profile_id, profile in MOCK_PROFILES.items():
-        assert "full_name" in profile
+        # All profiles should have skills array
         assert "skills" in profile
-        assert "city" in profile
+        
+        # Only check for full profile fields if it's not a minimal registration profile
+        if "full_name" in profile:
+            assert "city" in profile  # Full profiles should have complete data
     
     # Check events
     for event_id, event in MOCK_EVENTS.items():

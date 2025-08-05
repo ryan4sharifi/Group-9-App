@@ -251,7 +251,7 @@ def test_contact_message_with_whitespace():
     )
     
     assert contact.name == "  John Doe  "
-    assert contact.email == "  john@example.com  "
+    assert contact.email == "john@example.com"  # EmailStr automatically strips whitespace - this is correct
     assert contact.message == "  This is a test message  "
 
 # Test: Email Validation

@@ -35,8 +35,8 @@ def calculate_distance(origin: str, destination: str) -> float:
         # Mock distance calculation for testing - return a reasonable distance
         # Use a hash-based approach that's more predictable
         hash_value = abs(hash(origin + destination))
-        # Return a distance between 1 and 25 miles for testing
-        return round((hash_value % 25) + 1, 2)
+        # Return a distance between 1 and 25 miles for testing - ensure it's a float
+        return float((hash_value % 25) + 1)
     
     try:
         url = "https://maps.googleapis.com/maps/api/distancematrix/json"

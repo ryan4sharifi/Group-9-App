@@ -105,7 +105,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -140,6 +140,66 @@ async def root():
             "Comprehensive Reports"
         ]
     }
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        db_health = await check_database_health()
+        return {
+            "status": "healthy",
+            "database": db_health,
+            "websocket_connections": len(manager.active_connections),
+            "timestamp": "2025-08-05T00:00:00Z"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "websocket_connections": len(manager.active_connections),
+            "timestamp": "2025-08-05T00:00:00Z"
+        }
+
+# WebSocket endpoint for real-time notifications
+@app.websocket("/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: str):
+    await manager.connect(websocket, user_id)
+    try:
+        while True:
+            # Keep connection alive
+            data = await websocket.receive_text()
+            
+            # Handle ping-pong for health checks
+            try:
+                message = json.loads(data)
+                if message.get("type") == "ping":
+                    await websocket.send_text('{"type": "pong"}')
+                else:
+                    # Echo back other messages for testing
+                    await websocket.send_text(f"Message received: {data}")
+            except json.JSONDecodeError:
+                # If not JSON, just echo back
+                await websocket.send_text(f"Message received: {data}")
+    except WebSocketDisconnect:
+        manager.disconnect(user_id)
+        print(f"User {user_id} disconnected")
+
+# Notification endpoint for testing real-time functionality
+@app.post("/api/notify-realtime")
+async def notify_realtime(message: dict, current_user=Depends(verify_token)):
+    """Send real-time notification - Admin only"""
+    if current_user["role"] != "admin":
+        return JSONResponse(status_code=403, content={"error": "Admin access required"})
+    
+    try:
+        # Broadcast to all connected users
+        await manager.broadcast(
+            json.dumps({"type": "notification", "data": message})
+        )
+        return {"message": "Real-time notification sent"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 # 🔌 Register API route modules with appropriate prefixes
 app.include_router(auth.router, prefix="/auth")

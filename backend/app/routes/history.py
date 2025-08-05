@@ -17,7 +17,7 @@ class VolunteerLog(BaseModel):
 async def log_volunteer_participation(log: VolunteerLog):
     try:
         response = supabase.table("volunteer_history").insert(log.dict()).execute()
-        return {"message": "Participation logged", "data": response.data}
+        return {"message": "Volunteer history created successfully.", "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -36,7 +36,11 @@ async def get_volunteer_history(user_id: str):
 async def update_volunteer_log(log_id: str, log: VolunteerLog):
     try:
         response = supabase.table("volunteer_history").update(log.dict()).eq("id", log_id).execute()
-        return {"message": "Participation log updated", "data": response.data}
+        if not response.data:
+            raise HTTPException(status_code=404, detail="History entry not found")
+        return {"message": "Volunteer history updated successfully.", "data": response.data}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -45,6 +49,10 @@ async def update_volunteer_log(log_id: str, log: VolunteerLog):
 async def delete_volunteer_log(log_id: str):
     try:
         response = supabase.table("volunteer_history").delete().eq("id", log_id).execute()
-        return {"message": "Participation log deleted"}
+        if not response.data:
+            raise HTTPException(status_code=404, detail="History entry not found")
+        return {"message": "Volunteer history deleted successfully."}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

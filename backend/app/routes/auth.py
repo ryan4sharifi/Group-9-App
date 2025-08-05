@@ -110,7 +110,7 @@ async def register(user: UserRegister):
         # Check if user already exists in Supabase
         existing = supabase.table("user_credentials").select("id").eq("email", user.email).execute()
         if existing.data:
-            raise HTTPException(status_code=400, detail="Email already registered")
+            raise HTTPException(status_code=409, detail="Email already registered")
 
         hashed_password = bcrypt.hash(user.password) # Using bcrypt from passlib.hash directly
 
@@ -158,6 +158,9 @@ async def register(user: UserRegister):
             "user_id": user_id,
             "role": user.role.value
         }
+    except HTTPException:
+        # Re-raise HTTP exceptions without wrapping them
+        raise
     except Exception as e:
         # Check for unique constraint violation (e.g., email already exists)
         if "duplicate key value violates unique constraint" in str(e):
@@ -189,6 +192,9 @@ async def login(user: UserLogin):
             "user_id": db_user["id"],
             "role": db_user.get("role", "volunteer")
         }
+    except HTTPException:
+        # Re-raise HTTP exceptions without wrapping them
+        raise
     except Exception as e:
         print(f"Login server error: {e}") # Added for better debugging
         raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
@@ -196,12 +202,15 @@ async def login(user: UserLogin):
 @router.get("/user/{user_id}")
 async def get_user_by_id(user_id: str):
     try:
-        result = supabase.table("user_credentials").select("email", "role").eq("id", user_id).execute()
+        result = supabase.table("user_credentials").select("email, role").eq("id", user_id).execute()
 
         if not result.data:
             raise HTTPException(status_code=404, detail="User not found")
 
         return result.data[0]
+    except HTTPException:
+        # Re-raise HTTP exceptions without wrapping them
+        raise
     except Exception as e:
         print(f"Get user by ID server error: {e}") # Added for better debugging
         raise HTTPException(status_code=500, detail=f"Failed to retrieve user: {str(e)}")

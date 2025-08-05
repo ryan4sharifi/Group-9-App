@@ -27,7 +27,7 @@ async def create_event(event: Event, user_id: str):
     verify_admin(user_id)
     try:
         response = supabase.table("events").insert(event.dict()).execute()
-        return {"message": "Event created", "data": response.data}
+        return {"message": "Event created successfully", "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -44,10 +44,13 @@ async def get_all_events():
 @router.get("/events/{event_id}")
 async def get_event_by_id(event_id: str):
     try:
-        response = supabase.table("events").select("*").eq("id", event_id).single().execute()
+        response = supabase.table("events").select("*").eq("id", event_id).maybe_single().execute()
         if not response.data:
             raise HTTPException(status_code=404, detail="Event not found")
         return response.data
+    except HTTPException:
+        # Re-raise HTTP exceptions without wrapping
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -57,7 +60,12 @@ async def update_event(event_id: str, event: Event, user_id: str):
     verify_admin(user_id)
     try:
         response = supabase.table("events").update(event.dict()).eq("id", event_id).execute()
-        return {"message": "Event updated", "data": response.data}
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Event not found")
+        return {"message": "Event updated successfully", "data": response.data}
+    except HTTPException:
+        # Re-raise HTTP exceptions without wrapping
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -88,10 +96,15 @@ async def delete_event(event_id: str, user_id: str):
        
         supabase.table("volunteer_history").delete().eq("event_id", event_id).execute()
 
-        #
-        supabase.table("events").delete().eq("id", event_id).execute()
+        # Delete the event
+        delete_res = supabase.table("events").delete().eq("id", event_id).execute()
+        if not delete_res.data:
+            raise HTTPException(status_code=404, detail="Event not found")
 
         return {"message": "Event deleted and users notified"}
 
+    except HTTPException:
+        # Re-raise HTTP exceptions without wrapping
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

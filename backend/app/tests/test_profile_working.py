@@ -2,10 +2,11 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from datetime import date
+from unittest.mock import MagicMock
 
 client = TestClient(app)
 
-def test_create_profile_success():
+def test_create_profile_success(mock_supabase_client: MagicMock):
     """Test creating a user profile"""
     profile_data = {
         "full_name": "John Doe",
@@ -17,15 +18,30 @@ def test_create_profile_success():
         "preferences": "Remote work preferred"
     }
     
+    # Mock the upsert operation
+    mock_supabase_client.table.return_value.upsert.return_value.execute.return_value.data = [{"user_id": "test-user-123"}]
+    
     response = client.post("/api/profile/test-user-123", json=profile_data)
     assert response.status_code == 200
     data = response.json()
     assert "message" in data
     assert data["message"] == "Profile saved"
 
-def test_get_profile_success():
+def test_get_profile_success(mock_supabase_client: MagicMock):
     """Test retrieving a user profile"""
-    # First create a profile
+    # Mock the profile data to be returned
+    mock_profile = {
+        "user_id": "test-user-456",
+        "full_name": "Jane Smith", 
+        "skills": ["JavaScript", "React"],
+        "city": "Austin",
+        "state": "TX"
+    }
+    
+    # First mock the create operation
+    mock_supabase_client.table.return_value.upsert.return_value.execute.return_value.data = [mock_profile]
+    
+    # Create profile
     profile_data = {
         "full_name": "Jane Smith", 
         "skills": ["JavaScript", "React"],
@@ -33,6 +49,9 @@ def test_get_profile_success():
         "state": "TX"
     }
     client.post("/api/profile/test-user-456", json=profile_data)
+    
+    # Mock the get operation
+    mock_supabase_client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value.data = mock_profile
     
     # Then retrieve it
     response = client.get("/api/profile/test-user-456")

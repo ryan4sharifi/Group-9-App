@@ -6,8 +6,16 @@ import bcrypt # For Pylance
 
 @pytest.fixture(autouse=True)
 def mock_supabase_client():
-    with patch('app.supabase_client.supabase', autospec=True) as mock_supabase:
-        # Create a mock for the table object returned by supabase.table("tablename")
+    # Patch multiple import paths to ensure the mock is used everywhere
+    with patch('app.supabase_client.supabase', autospec=True) as mock_supabase, \
+         patch('app.routes.auth.supabase', autospec=True) as mock_auth_supabase, \
+         patch('app.routes.profile.supabase', autospec=True) as mock_profile_supabase, \
+         patch('app.routes.events.supabase', autospec=True) as mock_events_supabase, \
+         patch('app.routes.history.supabase', autospec=True) as mock_history_supabase, \
+         patch('app.routes.match.supabase', autospec=True) as mock_match_supabase, \
+         patch('app.routes.notifications.supabase', autospec=True) as mock_notifications_supabase:
+        
+        # Configure one mock and use it for all paths
         mock_table = MagicMock()
         mock_supabase.table.return_value = mock_table
 
@@ -27,6 +35,12 @@ def mock_supabase_client():
         mock_table.insert.return_value = mock_insert_builder
         mock_table.update.return_value = mock_update_builder
         mock_table.delete.return_value = mock_delete_builder
+
+        # Copy the same configuration to all other mock instances
+        for mock_sb in [mock_auth_supabase, mock_profile_supabase, 
+                       mock_events_supabase, mock_history_supabase, mock_match_supabase, 
+                       mock_notifications_supabase]:
+            mock_sb.table.return_value = mock_table
 
         # --- IMPORTANT: Configure .execute(), .single().execute(), .maybe_single().execute() ---
         # For a standard .select().execute() or .select().eq().execute()

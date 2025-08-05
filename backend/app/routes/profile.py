@@ -64,7 +64,20 @@ async def get_profile(user_id: str):
             creds_res = supabase.table("user_credentials").select("email, role").eq("id", user_id).execute()
             creds_data = creds_res.data[0] if creds_res and creds_res.data else {}
 
-        return {**profile_data, **creds_data}
+        # Ensure we have at least some data to return
+        if not profile_data and not creds_data:
+            raise HTTPException(status_code=404, detail="Profile not found")
+            
+        # Safely merge the data
+        merged_data = {}
+        if profile_data:
+            merged_data.update(profile_data)
+        if creds_data:
+            merged_data.update(creds_data)
+            
+        return merged_data
+    except HTTPException:
+        raise
     except Exception as e:
         print("SERVER ERROR:", e) 
         raise HTTPException(status_code=500, detail=f"Failed to retrieve profile: {str(e)}")
@@ -77,6 +90,10 @@ async def delete_profile(user_id: str):
         if not response.data:
             raise HTTPException(status_code=404, detail="Profile not found or already deleted")
         return {"message": "Profile deleted", "data": response.data}
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
+        print("SERVER ERROR:", e)
+        raise HTTPException(status_code=500, detail=f"Failed to delete profile: {str(e)}")
         print("SERVER ERROR:", e) 
         raise HTTPException(status_code=500, detail=f"Failed to delete profile: {str(e)}")

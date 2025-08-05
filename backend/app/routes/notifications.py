@@ -216,6 +216,8 @@ async def mark_notification_as_read(
         
         return {"message": "Notification marked as read"}
     
+    except HTTPException:
+        raise  # Re-raise HTTPException to preserve status code
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -243,6 +245,8 @@ async def delete_notification(
         
         return {"message": "Notification deleted"}
     
+    except HTTPException:
+        raise  # Re-raise HTTPException to preserve status code
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

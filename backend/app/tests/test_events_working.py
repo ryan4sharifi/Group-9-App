@@ -1,14 +1,30 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from unittest.mock import MagicMock
 
 client = TestClient(app)
 
-def test_get_all_events():
+def test_get_all_events(mock_supabase_client: MagicMock):
     """Test retrieving all events"""
+    # Mock the events response
+    mock_events = [
+        {
+            "id": "event-001",
+            "name": "Beach Cleanup Drive", 
+            "description": "Community beach cleanup",
+            "location": "CA",
+            "required_skills": ["cleaning"],
+            "urgency": "High"
+        }
+    ]
+    mock_supabase_client.table.return_value.select.return_value.order.return_value.execute.return_value.data = mock_events
+    
     response = client.get("/api/events")
     assert response.status_code == 200
     data = response.json()
+    print(f"DEBUG: Response data type: {type(data)}")
+    print(f"DEBUG: Response data: {data}")
     assert isinstance(data, list)
 
 def test_get_event_by_id():
