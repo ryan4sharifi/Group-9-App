@@ -55,13 +55,14 @@ class DistanceCalculator:
             logger.error(f"Error geocoding address '{address}': {e}")
             return None
     
-    def calculate_distance(self, origin_address: str, destination_address: str) -> Optional[Dict[str, Any]]:
+    def calculate_distance(self, origin_address: str, destination_address: str, mode: str = "driving") -> Optional[Dict[str, Any]]:
         """
         Calculate distance and travel time between two addresses
         
         Args:
             origin_address: Starting address
             destination_address: Destination address
+            mode: Travel mode - "driving" (default), "walking", "bicycling", "transit"
             
         Returns:
             Dictionary containing distance and duration info or None if calculation fails
@@ -80,9 +81,10 @@ class DistanceCalculator:
             matrix_result = self.client.distance_matrix(
                 origins=[origin_address],
                 destinations=[destination_address],
-                mode="driving",  # Can be "driving", "walking", "bicycling", "transit"
+                mode=mode,  # Now configurable: "driving", "walking", "bicycling", "transit"
                 units="imperial",  # Use miles instead of kilometers
-                avoid=None  # Can avoid "tolls", "highways", "ferries", "indoor"
+                avoid=None,  # Can avoid "tolls", "highways", "ferries", "indoor" 
+                departure_time="now"  # Use current time for traffic-aware routing
             )
             
             if not matrix_result or not matrix_result.get('rows'):
@@ -92,18 +94,19 @@ class DistanceCalculator:
             element = matrix_result['rows'][0]['elements'][0]
             
             if element['status'] != 'OK':
-                logger.warning(f"Distance calculation failed: {element['status']}")
+                logger.warning(f"Distance calculation failed: {element['status']} for {origin_address} to {destination_address}")
                 return None
                 
             result = {
                 "distance": element['distance'],
                 "duration": element['duration'],
                 "status": element['status'],
+                "mode": mode,
                 "origin_address": matrix_result['origin_addresses'][0],
                 "destination_address": matrix_result['destination_addresses'][0]
             }
             
-            logger.info(f"Distance calculated: {result['distance']['text']} from {origin_address} to {destination_address}")
+            logger.info(f"Distance calculated ({mode}): {result['distance']['text']} from {origin_address} to {destination_address}")
             return result
             
         except Exception as e:
@@ -132,6 +135,7 @@ distance_calculator = DistanceCalculator()
 def get_user_full_address(user_profile: Dict[str, Any]) -> Optional[str]:
     """
     Build full address string from user profile data
+    Only address1, city, and state are required. address2 and zip_code are optional.
     
     Args:
         user_profile: User profile dictionary with address fields
@@ -140,28 +144,28 @@ def get_user_full_address(user_profile: Dict[str, Any]) -> Optional[str]:
         Full address string or None if required fields are missing
     """
     try:
-        # Extract address components
-        address1 = user_profile.get('address1', '').strip()
-        address2 = user_profile.get('address2', '').strip()
-        city = user_profile.get('city', '').strip()
-        state = user_profile.get('state', '').strip()
-        zip_code = user_profile.get('zip_code', '').strip()
+        # Extract address components (handle None values)
+        address1 = (user_profile.get('address1') or '').strip()
+        address2 = (user_profile.get('address2') or '').strip()
+        city = (user_profile.get('city') or '').strip()
+        state = (user_profile.get('state') or '').strip()
+        zip_code = (user_profile.get('zip_code') or '').strip()
         
-        # Check if we have minimum required fields
+        # Check if we have minimum required fields (address1, city, state)
         if not address1 or not city or not state:
-            logger.warning("Missing required address fields in user profile")
+            logger.warning(f"Missing required address fields in user profile. address1: {'✓' if address1 else '✗'}, city: {'✓' if city else '✗'}, state: {'✓' if state else '✗'}")
             return None
             
         # Build address string
         address_parts = [address1]
-        if address2:
+        if address2:  # Only add address2 if it exists and is not empty
             address_parts.append(address2)
         address_parts.append(f"{city}, {state}")
-        if zip_code:
+        if zip_code:  # Only add zip_code if it exists and is not empty
             address_parts.append(zip_code)
             
         full_address = ', '.join(address_parts)
-        logger.info(f"Built full address: {full_address}")
+        logger.info(f"Successfully built full address: '{full_address}'")
         return full_address
         
     except Exception as e:

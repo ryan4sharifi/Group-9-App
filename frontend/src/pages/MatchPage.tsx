@@ -23,17 +23,9 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import WorkIcon from '@mui/icons-material/Work';
+import DirectionsIcon from '@mui/icons-material/Directions';
 import { useUser } from '../context/UserContext';
-
-interface Event {
-  id: string;
-  name: string;
-  description: string;
-  location: string;
-  event_date: string;
-  urgency: string;
-  required_skills: string[];
-}
+import { addDistanceToEvents, EventWithDistance } from '../utils/distance';
 
 interface VolunteerHistoryItem {
   id: string;
@@ -48,13 +40,14 @@ interface UserProfile {
 
 const MatchPage: React.FC = () => {
   const { userId } = useUser();
-  const [matchedEvents, setMatchedEvents] = useState<Event[]>([]);
-  const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [matchedEvents, setMatchedEvents] = useState<EventWithDistance[]>([]);
+  const [allEvents, setAllEvents] = useState<EventWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [signedUpEvents, setSignedUpEvents] = useState<Set<string>>(new Set());
   const [signingUpEventId, setSigningUpEventId] = useState<string | null>(null);
   const [userSkills, setUserSkills] = useState<string[]>([]);
+  const [loadingDistances, setLoadingDistances] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -74,8 +67,33 @@ const MatchPage: React.FC = () => {
         axios.get<UserProfile>(`http://localhost:8000/api/profile/${userId}`)
       ]);
 
-      setMatchedEvents(matchedRes.data.matched_events || []);
-      setAllEvents(allRes.data || []);
+      const matchedEventsData = matchedRes.data.matched_events || [];
+      const allEventsData = allRes.data || [];
+
+      // Get auth token and add distance information
+      const token = localStorage.getItem('token');
+      if (token) {
+        setLoadingDistances(true);
+        try {
+          const [matchedEventsWithDistance, allEventsWithDistance] = await Promise.all([
+            addDistanceToEvents(matchedEventsData, token),
+            addDistanceToEvents(allEventsData, token)
+          ]);
+          
+          setMatchedEvents(matchedEventsWithDistance);
+          setAllEvents(allEventsWithDistance);
+        } catch (distanceError) {
+          console.error('Error adding distance information:', distanceError);
+          // Fallback to events without distance if distance calculation fails
+          setMatchedEvents(matchedEventsData);
+          setAllEvents(allEventsData);
+        }
+        setLoadingDistances(false);
+      } else {
+        // If no token, use events without distance
+        setMatchedEvents(matchedEventsData);
+        setAllEvents(allEventsData);
+      }
 
       const userHistory: VolunteerHistoryItem[] = historyRes.data.history || [];
       const signedUpIds = new Set<string>();
@@ -142,7 +160,7 @@ const MatchPage: React.FC = () => {
   // --- END UPDATED ---
 
 
-  const EventCard = ({ event }: { event: Event }) => {
+  const EventCard = ({ event }: { event: EventWithDistance }) => {
     const hasSignedUp = signedUpEvents.has(event.id);
     const isSigningUp = signingUpEventId === event.id;
 
@@ -181,8 +199,18 @@ const MatchPage: React.FC = () => {
           <Stack spacing={1.5} sx={{ mb: 2.5 }}>
             <Box display="flex" alignItems="center" gap={1}>
               <LocationOnIcon fontSize="small" />
-              <Typography variant="caption">{event.location}</Typography>
+              <Typography variant="caption">
+                {event.address1 ? `${event.address1}, ${event.city}, ${event.state} ${event.zip_code}` : event.location || 'No address available'}
+              </Typography>
             </Box>
+            {event.distance_text && (
+              <Box display="flex" alignItems="center" gap={1}>
+                <DirectionsIcon fontSize="small" color="primary" />
+                <Typography variant="caption" color="primary.main" fontWeight="medium">
+                  {event.distance_text}
+                </Typography>
+              </Box>
+            )}
             <Box display="flex" alignItems="center" gap={1}>
               <CalendarTodayIcon fontSize="small" />
               <Typography variant="caption">
@@ -194,8 +222,8 @@ const MatchPage: React.FC = () => {
             <Box display="flex" alignItems="center" gap={1}>
               <PriorityHighIcon fontSize="small" sx={{ color: theme.palette.error.main }} />
               <Typography variant="caption" fontWeight="medium" color={
-                event.urgency === 'High' ? 'error.main' :
-                event.urgency === 'Medium' ? 'warning.main' : 'success.main'
+                event.urgency?.toLowerCase() === 'high' ? 'error.main' :
+                event.urgency?.toLowerCase() === 'medium' ? 'warning.main' : 'success.main'
               }>
                 {event.urgency} Priority
               </Typography>
@@ -245,7 +273,7 @@ const MatchPage: React.FC = () => {
     );
   };
 
-  const renderEventList = (events: Event[]) => (
+  const renderEventList = (events: EventWithDistance[]) => (
     <Box
       sx={{
         mt: 1,
@@ -283,6 +311,14 @@ const MatchPage: React.FC = () => {
         <Stack alignItems="center" py={5}><CircularProgress /></Stack>
       ) : (
         <>
+          {loadingDistances && (
+            <Box display="flex" alignItems="center" justifyContent="center" mb={2}>
+              <CircularProgress size={20} sx={{ mr: 1 }} />
+              <Typography variant="body2" color="text.secondary">
+                Calculating distances...
+              </Typography>
+            </Box>
+          )}
           <Paper elevation={0} sx={{ mb: 5 }}>
             <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
               Your Matched Events

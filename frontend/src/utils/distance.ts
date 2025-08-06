@@ -16,7 +16,12 @@ export interface EventWithDistance {
   id: string;
   name: string;
   description: string;
-  location: string;
+  location?: string; // Legacy field for backward compatibility
+  address1: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zip_code: string;
   required_skills: string[];
   urgency: 'low' | 'medium' | 'high';
   event_date: string;

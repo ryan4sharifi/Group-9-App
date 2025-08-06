@@ -196,6 +196,7 @@ class DistanceCache:
 def calculate_and_cache_distance(user_id: str, event_id: str, event_location: str) -> Optional[Dict[str, Any]]:
     """
     Calculate distance with caching - checks cache first, then calculates if needed
+    Only requires address1, city, and state from user profile. address2 is optional.
     
     Args:
         user_id: User ID
@@ -206,6 +207,8 @@ def calculate_and_cache_distance(user_id: str, event_id: str, event_location: st
         Distance data with caching info
     """
     try:
+        logger.info(f"Starting distance calculation for user {user_id} to event {event_id}")
+        
         # First check cache
         cached_result = DistanceCache.get_cached_distance(user_id, event_id)
         if cached_result:
@@ -221,21 +224,22 @@ def calculate_and_cache_distance(user_id: str, event_id: str, event_location: st
         # Get user profile for address
         user_response = supabase.table("user_profiles").select("*").eq("user_id", user_id).execute()
         if not user_response.data:
-            logger.warning(f"No profile found for user {user_id}")
+            logger.error(f"No profile found for user {user_id}")
             return None
         
         user_profile = user_response.data[0]
+        
         user_address = get_user_full_address(user_profile)
         
         if not user_address:
-            logger.warning(f"Could not build address for user {user_id}")
+            logger.error(f"Could not build address for user {user_id}")
             return None
         
         # Calculate distance using Google Maps API
         distance_result = distance_calculator.calculate_distance(user_address, event_location)
         
         if not distance_result:
-            logger.warning(f"Could not calculate distance from {user_address} to {event_location}")
+            logger.error(f"Google Maps API could not calculate distance from {user_address} to {event_location}")
             return None
         
         # Save to cache

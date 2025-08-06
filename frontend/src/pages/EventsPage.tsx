@@ -52,7 +52,12 @@ interface Event {
   name: string;
   description: string;
   event_date: string;
-  location: string;
+  location?: string; // Legacy field for backward compatibility
+  address1: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zip_code: string;
   required_skills: string[];
   urgency: 'low' | 'medium' | 'high';
   distance_text?: string;
@@ -96,7 +101,11 @@ const EventsPage: React.FC = () => {
     name: '',
     description: '',
     event_date: '',
-    location: '',
+    address1: '',
+    address2: '',
+    city: '',
+    state: '',
+    zip_code: '',
     required_skills: [] as string[],
     urgency: 'medium' as 'low' | 'medium' | 'high'
   });
@@ -118,6 +127,18 @@ const EventsPage: React.FC = () => {
       addDistanceInfo(events);
     }
   }, [userLocation, userId, events.length]);
+
+  const getFullAddress = (event: Event) => {
+    const parts = [
+      event.address1,
+      event.address2,
+      event.city,
+      `${event.state} ${event.zip_code}`
+    ].filter(part => part && part.trim() !== '');
+    
+    const address = parts.join(', ');
+    return address;
+  };
 
   const getUserLocation = () => {
     if (navigator.geolocation) {
@@ -214,7 +235,11 @@ const EventsPage: React.FC = () => {
       name: event.name,
       description: event.description,
       event_date: event.event_date,
-      location: event.location,
+      address1: event.address1,
+      address2: event.address2 || '',
+      city: event.city,
+      state: event.state,
+      zip_code: event.zip_code,
       required_skills: event.required_skills,
       urgency: event.urgency
     });
@@ -259,14 +284,19 @@ const EventsPage: React.FC = () => {
       name: '',
       description: '',
       event_date: '',
-      location: '',
+      address1: '',
+      address2: '',
+      city: '',
+      state: '',
+      zip_code: '',
       required_skills: [],
       urgency: 'medium'
     });
   };
 
   const getUrgencyColor = (urgency: string) => {
-    switch (urgency) {
+    const normalizedUrgency = urgency.toLowerCase();
+    switch (normalizedUrgency) {
       case 'high': return 'error';
       case 'medium': return 'warning';
       case 'low': return 'success';
@@ -421,7 +451,9 @@ const EventsPage: React.FC = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <LocationIcon fontSize="small" color="action" />
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1 }}>
-                      <Typography variant="body2">{event.location}</Typography>
+                      <Typography variant="body2">
+                        {event.address1 ? `${event.address1}, ${event.city}, ${event.state} ${event.zip_code}` : 'No address available'}
+                      </Typography>
                       {/* Distance Information */}
                       {userLocation && userId && (event.distance_text || event.duration_text) && (
                         <DistanceDisplay
@@ -527,12 +559,43 @@ const EventsPage: React.FC = () => {
             />
             
             <TextField
-              label="Location"
+              label="Address Line 1"
               fullWidth
-              value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              value={form.address1}
+              onChange={(e) => setForm({ ...form, address1: e.target.value })}
               required
             />
+            
+            <TextField
+              label="Address Line 2 (Optional)"
+              fullWidth
+              value={form.address2}
+              onChange={(e) => setForm({ ...form, address2: e.target.value })}
+            />
+            
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="City"
+                fullWidth
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                required
+              />
+              <TextField
+                label="State"
+                fullWidth
+                value={form.state}
+                onChange={(e) => setForm({ ...form, state: e.target.value })}
+                required
+              />
+              <TextField
+                label="ZIP Code"
+                fullWidth
+                value={form.zip_code}
+                onChange={(e) => setForm({ ...form, zip_code: e.target.value })}
+                required
+              />
+            </Box>
             
             <TextField
               label="Urgency"

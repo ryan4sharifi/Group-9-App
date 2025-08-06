@@ -40,7 +40,12 @@ interface MatchedEvent {
   name: string;
   description: string;
   event_date: string;
-  location: string;
+  location?: string; // Legacy field for backward compatibility
+  address1: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zip_code: string;
   required_skills: string[];
   urgency: 'low' | 'medium' | 'high';
   distance_text?: string;
@@ -84,6 +89,18 @@ const VolunteerMatchingPage: React.FC = () => {
   useEffect(() => {
     applyFiltersAndSorting();
   }, [matchedEvents, maxDistance, sortBy, sortOrder, showNearbyOnly]);
+
+  const getFullAddress = (event: MatchedEvent) => {
+    const parts = [
+      event.address1,
+      event.address2,
+      event.city,
+      `${event.state} ${event.zip_code}`
+    ].filter(part => part && part.trim() !== '');
+    
+    const address = parts.join(', ');
+    return address;
+  };
 
   const getUserLocation = () => {
     if (navigator.geolocation) {
@@ -396,9 +413,11 @@ const VolunteerMatchingPage: React.FC = () => {
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <LocationIcon fontSize="small" color="action" />
+                                                <LocationIcon fontSize="small" color="action" />
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1 }}>
-                          <Typography variant="body2">{event.location}</Typography>
+                          <Typography variant="body2">
+                            {event.address1 ? `${event.address1}, ${event.city}, ${event.state} ${event.zip_code}` : 'No address available'}
+                          </Typography>
                           {/* Distance Information */}
                           {userLocation && (event.distance_text || event.duration_text) && (
                             <DistanceDisplay

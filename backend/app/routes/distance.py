@@ -41,7 +41,11 @@ class EventWithDistanceResponse(BaseModel):
     id: str
     name: str
     description: str
-    location: str
+    address1: str
+    address2: str
+    city: str
+    state: str
+    zip_code: str
     required_skills: List[str]
     urgency: str
     event_date: str
@@ -96,12 +100,17 @@ async def get_distance_to_event(
     try:
         user_id = current_user["user_id"]  # Changed from "sub" to "user_id"
         
-        # Get event location
-        event_result = supabase.table("events").select("location").eq("id", event_id).execute()
+        # Get event location data
+        event_result = supabase.table("events").select("address1, address2, city, state, zip_code").eq("id", event_id).execute()
         if not event_result.data:
             raise HTTPException(status_code=404, detail="Event not found")
             
-        event_location = event_result.data[0]["location"]
+        event_data = event_result.data[0]
+        # Format the complete address
+        event_location = f"{event_data['address1']}"
+        if event_data.get('address2'):
+            event_location += f", {event_data['address2']}"
+        event_location += f", {event_data['city']}, {event_data['state']} {event_data['zip_code']}"
         
         # Calculate distance with caching
         distance_data = calculate_and_cache_distance(user_id, event_id, event_location)
@@ -130,7 +139,7 @@ async def get_nearby_events(
     Uses caching for improved performance
     """
     try:
-        user_id = current_user["sub"]
+        user_id = current_user["user_id"]  # Fixed: use "user_id" consistently
         
         events_with_distance = get_nearby_events_for_user(user_id, max_distance)
         
@@ -151,7 +160,7 @@ async def get_user_distance_cache(
     """
     try:
         # Check permissions
-        current_user_id = current_user["sub"]
+        current_user_id = current_user["user_id"]  # Fixed: use "user_id" consistently
         current_user_role = current_user["role"]
         
         if current_user_role != "admin" and current_user_id != user_id:
@@ -212,18 +221,23 @@ async def get_distance_for_user_to_event(
     """
     try:
         # Check permissions
-        current_user_id = current_user["sub"]
+        current_user_id = current_user["user_id"]  # Fixed: use "user_id" consistently
         current_user_role = current_user["role"]
         
         if current_user_role != "admin" and current_user_id != user_id:
             raise HTTPException(status_code=403, detail="Access denied")
             
-        # Get event location
-        event_result = supabase.table("events").select("location").eq("id", event_id).execute()
+        # Get event location data
+        event_result = supabase.table("events").select("address1, address2, city, state, zip_code").eq("id", event_id).execute()
         if not event_result.data:
             raise HTTPException(status_code=404, detail="Event not found")
             
-        event_location = event_result.data[0]["location"]
+        event_data = event_result.data[0]
+        # Format the complete address
+        event_location = f"{event_data['address1']}"
+        if event_data.get('address2'):
+            event_location += f", {event_data['address2']}"
+        event_location += f", {event_data['city']}, {event_data['state']} {event_data['zip_code']}"
         
         # Calculate distance with caching
         distance_data = calculate_and_cache_distance(user_id, event_id, event_location)
