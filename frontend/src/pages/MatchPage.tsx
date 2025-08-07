@@ -18,12 +18,18 @@ import {
   useTheme,
   useMediaQuery,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
 } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import WorkIcon from '@mui/icons-material/Work';
 import DirectionsIcon from '@mui/icons-material/Directions';
+import SortIcon from '@mui/icons-material/Sort';
 import { useUser } from '../context/UserContext';
 import { addDistanceToEvents, EventWithDistance } from '../utils/distance';
 
@@ -38,6 +44,8 @@ interface UserProfile {
   skills: string[];
 }
 
+type SortOption = 'none' | 'distance-closest' | 'distance-farthest' | 'priority-high' | 'priority-low' | 'date-closest' | 'date-farthest';
+
 const MatchPage: React.FC = () => {
   const { userId } = useUser();
   const [matchedEvents, setMatchedEvents] = useState<EventWithDistance[]>([]);
@@ -48,9 +56,62 @@ const MatchPage: React.FC = () => {
   const [signingUpEventId, setSigningUpEventId] = useState<string | null>(null);
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [loadingDistances, setLoadingDistances] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>('date-closest'); // Default to closest events first
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Sorting function
+  const sortEvents = (events: EventWithDistance[], sortBy: SortOption): EventWithDistance[] => {
+    if (sortBy === 'none') return events;
+
+    return [...events].sort((a, b) => {
+      switch (sortBy) {
+        case 'distance-closest':
+          // Sort by distance value (closest first)
+          if (!a.distance_value && !b.distance_value) return 0;
+          if (!a.distance_value) return 1;
+          if (!b.distance_value) return -1;
+          return a.distance_value - b.distance_value;
+        
+        case 'distance-farthest':
+          // Sort by distance value (farthest first)
+          if (!a.distance_value && !b.distance_value) return 0;
+          if (!a.distance_value) return 1;
+          if (!b.distance_value) return -1;
+          return b.distance_value - a.distance_value;
+        
+        case 'priority-high':
+          // Sort by priority (High -> Medium -> Low)
+          const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+          const aPriority = priorityOrder[a.urgency as keyof typeof priorityOrder] || 0;
+          const bPriority = priorityOrder[b.urgency as keyof typeof priorityOrder] || 0;
+          return bPriority - aPriority;
+        
+        case 'priority-low':
+          // Sort by priority (Low -> Medium -> High)
+          const priorityOrderLow = { 'High': 3, 'Medium': 2, 'Low': 1 };
+          const aPriorityLow = priorityOrderLow[a.urgency as keyof typeof priorityOrderLow] || 0;
+          const bPriorityLow = priorityOrderLow[b.urgency as keyof typeof priorityOrderLow] || 0;
+          return aPriorityLow - bPriorityLow;
+        
+        case 'date-closest':
+          // Sort by event date (closest date first)
+          return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+        
+        case 'date-farthest':
+          // Sort by event date (farthest date first)
+          return new Date(b.event_date).getTime() - new Date(a.event_date).getTime();
+        
+        default:
+          return 0;
+      }
+    });
+  };
+
+  const handleSortChange = (event: SelectChangeEvent<SortOption>) => {
+    setSortOption(event.target.value as SortOption);
+  };
 
   const fetchData = useCallback(async () => {
     if (!userId) {
@@ -273,33 +334,44 @@ const MatchPage: React.FC = () => {
     );
   };
 
-  const renderEventList = (events: EventWithDistance[]) => (
-    <Box
-      sx={{
-        mt: 1,
-        width: '100%',
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: theme.spacing(3),
-        '& > *': {
-          width: isMobile ? '100%' : 'calc(50% - 12px)',
-        },
-        '@media (min-width: 900px)': {
-            '& > *': {
-                width: 'calc(33.33% - 16px)',
-            }
-        },
-      }}
-    >
-      {events.map((event) => (
-        <Box key={event.id}>
-          <EventCard event={event} />
-        </Box>
-      ))}
-    </Box>
-  );
+  const renderEventList = (events: EventWithDistance[]) => {
+    const sortedEvents = sortEvents(events, sortOption);
+    
+    return (
+      <Box
+        sx={{
+          mt: 1,
+          width: '100%',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: theme.spacing(3),
+          '& > *': {
+            width: isMobile ? '100%' : 'calc(50% - 12px)',
+          },
+          '@media (min-width: 900px)': {
+              '& > *': {
+                  width: 'calc(33.33% - 16px)',
+              }
+          },
+        }}
+      >
+        {sortedEvents.map((event) => (
+          <Box key={event.id}>
+            <EventCard event={event} />
+          </Box>
+        ))}
+      </Box>
+    );
+  };
 
-  const unmatchedEvents = allEvents.filter(e => !signedUpEvents.has(e.id));
+  const unmatchedEvents = allEvents.filter(e => {
+    // Exclude events that are already signed up for
+    if (signedUpEvents.has(e.id)) return false;
+    
+    // Exclude events that are already in the matched events section
+    const isInMatchedEvents = matchedEvents.some(matchedEvent => matchedEvent.id === e.id);
+    return !isInMatchedEvents;
+  });
 
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
@@ -319,6 +391,38 @@ const MatchPage: React.FC = () => {
               </Typography>
             </Box>
           )}
+
+          {/* Sort Controls */}
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+            <Typography variant="h6" fontWeight={600} color="text.primary">
+              Filter & Sort Events
+            </Typography>
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel id="sort-select-label">
+                <Box display="flex" alignItems="center" gap={1}>
+                  <SortIcon fontSize="small" />
+                  Sort by
+                </Box>
+              </InputLabel>
+              <Select
+                labelId="sort-select-label"
+                value={sortOption}
+                onChange={handleSortChange}
+                label="Sort by"
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="date-closest">Date: Closest</MenuItem>
+                <MenuItem value="date-farthest">Date: Farthest</MenuItem>
+                <Divider />
+                <MenuItem value="distance-closest">Distance: Closest</MenuItem>
+                <MenuItem value="distance-farthest">Distance: Farthest</MenuItem>
+                <Divider />
+                <MenuItem value="priority-high">Priority: High to Low</MenuItem>
+                <MenuItem value="priority-low">Priority: Low to High</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+
           <Paper elevation={0} sx={{ mb: 5 }}>
             <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
               Your Matched Events

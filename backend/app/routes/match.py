@@ -105,7 +105,8 @@ def fetch_user_skills(user_id: str) -> set:
     try:
         result = supabase.table("user_profiles").select("skills").eq("user_id", user_id).execute()
         if result.data:
-            return set(result.data[0].get("skills", []))
+            # Convert all skills to lowercase for case-insensitive matching
+            return set(skill.lower() for skill in result.data[0].get("skills", []))
         return set()
     except Exception:
         return set()
@@ -131,7 +132,8 @@ async def match_and_notify(user_id: str) -> dict:
         matched_events = []
 
         for event in all_events:
-            event_skills = set(event.get("required_skills", []))
+            # Convert event skills to lowercase for case-insensitive matching
+            event_skills = set(skill.lower() for skill in event.get("required_skills", []))
 
             # Check if user's skills match required skills of event
             if user_skills.intersection(event_skills):
@@ -169,7 +171,7 @@ async def get_matched_events(user_id: str) -> dict:
 
         matched_events = [
             event for event in all_events
-            if user_skills.intersection(set(event.get("required_skills", [])))
+            if user_skills.intersection(set(skill.lower() for skill in event.get("required_skills", [])))
         ]
 
         return {"matched_events": matched_events}
