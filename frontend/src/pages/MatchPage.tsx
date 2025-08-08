@@ -31,7 +31,7 @@ import WorkIcon from '@mui/icons-material/Work';
 import DirectionsIcon from '@mui/icons-material/Directions';
 import SortIcon from '@mui/icons-material/Sort';
 import { useUser } from '../context/UserContext';
-import { addDistanceToEvents, EventWithDistance } from '../utils/distance';
+import { addDistanceToEvents, getDistanceToEvent, EventWithDistance } from '../utils/distance';
 
 interface VolunteerHistoryItem {
   id: string;
@@ -131,29 +131,15 @@ const MatchPage: React.FC = () => {
       const matchedEventsData = matchedRes.data.matched_events || [];
       const allEventsData = allRes.data || [];
 
-      // Get auth token and add distance information
+      // Set events immediately for progressive loading
+      setMatchedEvents(matchedEventsData);
+      setAllEvents(allEventsData);
+
+      // Add distance information progressively
       const token = localStorage.getItem('token');
       if (token) {
         setLoadingDistances(true);
-        try {
-          const [matchedEventsWithDistance, allEventsWithDistance] = await Promise.all([
-            addDistanceToEvents(matchedEventsData, token),
-            addDistanceToEvents(allEventsData, token)
-          ]);
-          
-          setMatchedEvents(matchedEventsWithDistance);
-          setAllEvents(allEventsWithDistance);
-        } catch (distanceError) {
-          console.error('Error adding distance information:', distanceError);
-          // Fallback to events without distance if distance calculation fails
-          setMatchedEvents(matchedEventsData);
-          setAllEvents(allEventsData);
-        }
-        setLoadingDistances(false);
-      } else {
-        // If no token, use events without distance
-        setMatchedEvents(matchedEventsData);
-        setAllEvents(allEventsData);
+        addDistanceInfoProgressively(matchedEventsData, allEventsData, token);
       }
 
       const userHistory: VolunteerHistoryItem[] = historyRes.data.history || [];
@@ -174,6 +160,86 @@ const MatchPage: React.FC = () => {
       setLoading(false);
     }
   }, [userId]);
+
+  const addDistanceInfoProgressively = async (
+    matchedEventsData: EventWithDistance[], 
+    allEventsData: EventWithDistance[], 
+    token: string
+  ) => {
+    try {
+      // Process matched events
+      await Promise.allSettled(
+        matchedEventsData.map(async (event, index) => {
+          try {
+            const distanceData = await getDistanceToEvent(event.id, token);
+            console.log(`Distance data for event ${event.id}:`, distanceData);
+            if (distanceData) {
+              const updatedEvent = {
+                ...event,
+                distance_text: distanceData.distance_text,
+                duration_text: distanceData.duration_text,
+                distance_value: distanceData.distance_value,
+                duration_value: distanceData.duration_value,
+                cached: distanceData.cached,
+              };
+              
+              console.log(`Updated matched event:`, updatedEvent);
+              
+              // Update matched events immediately as each distance is calculated
+              setMatchedEvents(prevEvents => {
+                const newEvents = [...prevEvents];
+                const eventIndex = newEvents.findIndex(e => e.id === event.id);
+                if (eventIndex !== -1) {
+                  newEvents[eventIndex] = updatedEvent;
+                }
+                return newEvents;
+              });
+            }
+          } catch (err) {
+            console.error(`Error calculating distance for matched event ${event.id}:`, err);
+          }
+        })
+      );
+
+      // Process all events  
+      await Promise.allSettled(
+        allEventsData.map(async (event, index) => {
+          try {
+            const distanceData = await getDistanceToEvent(event.id, token);
+            console.log(`Distance data for all events ${event.id}:`, distanceData);
+            if (distanceData) {
+              const updatedEvent = {
+                ...event,
+                distance_text: distanceData.distance_text,
+                duration_text: distanceData.duration_text,
+                distance_value: distanceData.distance_value,
+                duration_value: distanceData.duration_value,
+                cached: distanceData.cached,
+              };
+              
+              console.log(`Updated all event:`, updatedEvent);
+              
+              // Update all events immediately as each distance is calculated
+              setAllEvents(prevEvents => {
+                const newEvents = [...prevEvents];
+                const eventIndex = newEvents.findIndex(e => e.id === event.id);
+                if (eventIndex !== -1) {
+                  newEvents[eventIndex] = updatedEvent;
+                }
+                return newEvents;
+              });
+            }
+          } catch (err) {
+            console.error(`Error calculating distance for event ${event.id}:`, err);
+          }
+        })
+      );
+    } catch (err) {
+      console.error('Error adding distance information:', err);
+    } finally {
+      setLoadingDistances(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -269,6 +335,14 @@ const MatchPage: React.FC = () => {
                 <DirectionsIcon fontSize="small" color="primary" />
                 <Typography variant="caption" color="primary.main" fontWeight="medium">
                   {event.distance_text}
+                </Typography>
+              </Box>
+            )}
+            {!event.distance_text && (
+              <Box display="flex" alignItems="center" gap={1}>
+                <DirectionsIcon fontSize="small" color="disabled" />
+                <Typography variant="caption" color="text.disabled">
+                  Distance calculating...
                 </Typography>
               </Box>
             )}

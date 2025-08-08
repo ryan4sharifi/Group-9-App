@@ -31,6 +31,7 @@ import DistanceDisplay from '../components/distance/DistanceDisplay';
 import DistanceFilter from '../components/distance/DistanceFilter';
 import { 
   addDistanceToEvents, 
+  getDistanceToEvent,
   sortEventsByDistance, 
   filterEventsByDistance 
 } from '../utils/distance';
@@ -145,11 +146,13 @@ const VolunteerMatchingPage: React.FC = () => {
     try {
       const response = await axios.get(`http://localhost:8000/api/matched_events/${userId}`);
       const eventsData = response.data.matched_events || [];
+      
+      // Set events immediately for progressive loading
       setMatchedEvents(eventsData);
       
-      // Add distance information if user location is available
+      // Add distance information progressively if user location is available
       if (userLocation && userId) {
-        await addDistanceInfo(eventsData);
+        addDistanceInfo(eventsData);
       }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to fetch matched events');
@@ -166,8 +169,39 @@ const VolunteerMatchingPage: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      const eventsWithDistance = await addDistanceToEvents(eventsData, token);
-      setMatchedEvents(eventsWithDistance);
+      // Add distance information progressively - each event updates as calculation completes
+      const updatedEvents = [...eventsData];
+      
+      // Process events in parallel but update UI as each completes
+      await Promise.allSettled(
+        eventsData.map(async (event, index) => {
+          try {
+            const distanceData = await getDistanceToEvent(event.id, token);
+            if (distanceData) {
+              updatedEvents[index] = {
+                ...event,
+                distance_text: distanceData.distance_text,
+                duration_text: distanceData.duration_text,
+                distance_value: distanceData.distance_value,
+                duration_value: distanceData.duration_value,
+                distance_cached: distanceData.cached,
+              };
+              
+              // Update state immediately as each distance is calculated
+              setMatchedEvents(prevEvents => {
+                const newEvents = [...prevEvents];
+                const eventIndex = newEvents.findIndex(e => e.id === event.id);
+                if (eventIndex !== -1) {
+                  newEvents[eventIndex] = updatedEvents[index];
+                }
+                return newEvents;
+              });
+            }
+          } catch (err) {
+            console.error(`Error calculating distance for event ${event.id}:`, err);
+          }
+        })
+      );
     } catch (err) {
       console.error('Error adding distance information:', err);
     } finally {

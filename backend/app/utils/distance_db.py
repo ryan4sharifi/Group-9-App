@@ -20,31 +20,62 @@ class DistanceCache:
     @staticmethod
     def get_cached_distance(user_id: str, event_id: str) -> Optional[Dict[str, Any]]:
         """
-        Get cached distance calculation for user-event pair
+        Retrieve cached distance data if it exists and hasn't expired
         
         Args:
-            user_id: User ID
-            event_id: Event ID
+            user_id: ID of the user
+            event_id: ID of the event
             
         Returns:
-            Cached distance data or None if not found/expired
+            Distance data if cached and valid, None otherwise
         """
         try:
-            # Query for cached distance
             response = supabase.table("distance_cache").select("*").eq("user_id", user_id).eq("event_id", event_id).execute()
             
-            if response.data and len(response.data) > 0:
-                cached_data = response.data[0]
+            if response.data:
+                cache_entry = response.data[0]
                 
-                # Check if cache is still valid (24 hours)
-                calculated_at = datetime.fromisoformat(cached_data["calculated_at"].replace("Z", "+00:00"))
-                if datetime.now() - calculated_at < timedelta(hours=24):
-                    logger.info(f"Found valid cached distance for user {user_id} to event {event_id}")
-                    return cached_data
-                else:
-                    logger.info(f"Cache expired for user {user_id} to event {event_id}")
-                    # Delete expired cache
-                    DistanceCache.delete_cached_distance(user_id, event_id)
+                # Check if cache has expired using expires_at field
+                if "expires_at" in cache_entry and cache_entry["expires_at"]:
+                    try:
+                        # Handle different datetime formats
+                        expires_at_str = cache_entry["expires_at"]
+                        if expires_at_str.endswith('+00:00'):
+                            expires_at_str = expires_at_str.replace('+00:00', 'Z')
+                        
+                        # Parse the datetime string, handling potential microsecond precision issues
+                        if '.' in expires_at_str and expires_at_str.endswith('Z'):
+                            # Split on '.' and ensure microseconds are exactly 6 digits
+                            date_part, time_part = expires_at_str.split('.')
+                            microseconds = time_part.rstrip('Z')
+                            # Truncate or pad microseconds to 6 digits
+                            microseconds = microseconds[:6].ljust(6, '0')
+                            expires_at_str = f"{date_part}.{microseconds}Z"
+                        
+                        expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
+                        current_time = datetime.now().replace(tzinfo=expires_at.tzinfo)
+                        
+                        if current_time > expires_at:
+                            logger.info(f"Cache expired for user {user_id}, event {event_id}")
+                            return None
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Could not parse expires_at field: {e}")
+                        # Fallback to created_at + 7 days
+                        created_at = datetime.fromisoformat(cache_entry["created_at"].replace("Z", "+00:00"))
+                        cutoff_time = datetime.now().replace(tzinfo=created_at.tzinfo) - timedelta(days=7)
+                        if created_at < cutoff_time:
+                            logger.info(f"Cache expired (fallback) for user {user_id}, event {event_id}")
+                            return None
+                
+                logger.info(f"Cache hit for user {user_id}, event {event_id}")
+                return {
+                    "distance_text": cache_entry["distance_text"],
+                    "duration_text": cache_entry["duration_text"],
+                    "distance_value": cache_entry["distance_value"],
+                    "duration_value": cache_entry["duration_value"],
+                    "cached": True,
+                    "expires_at": cache_entry.get("expires_at")
+                }
             
             return None
             
@@ -74,29 +105,34 @@ class DistanceCache:
             True if saved successfully, False otherwise
         """
         try:
+            # Calculate expiration time (7 days from now)
+            expires_at = datetime.now() + timedelta(days=7)
+            
             cache_data = {
                 "user_id": user_id,
                 "event_id": event_id,
-                "origin_address": origin_address,
-                "destination_address": destination_address,
                 "distance_text": distance_result["distance"]["text"],
                 "distance_value": distance_result["distance"]["value"],
                 "duration_text": distance_result["duration"]["text"],
                 "duration_value": distance_result["duration"]["value"],
-                "calculated_at": datetime.now().isoformat()
+                "expires_at": expires_at.isoformat()
             }
             
-            # Use upsert to handle duplicates
-            response = supabase.table("distance_cache").upsert(
-                cache_data, 
-                on_conflict=["user_id", "event_id"]
-            ).execute()
+            # Check if entry already exists
+            existing = supabase.table("distance_cache").select("id").eq("user_id", user_id).eq("event_id", event_id).execute()
+            
+            if existing.data:
+                # Update existing entry
+                response = supabase.table("distance_cache").update(cache_data).eq("user_id", user_id).eq("event_id", event_id).execute()
+            else:
+                # Insert new entry
+                response = supabase.table("distance_cache").insert(cache_data).execute()
             
             if response.data:
                 logger.info(f"Saved distance calculation to cache: user {user_id} to event {event_id}")
                 return True
             else:
-                logger.error(f"Failed to save distance to cache: {response.error}")
+                logger.error(f"Failed to save distance to cache")
                 return False
                 
         except Exception as e:
@@ -171,17 +207,51 @@ class DistanceCache:
             Number of entries cleaned up
         """
         try:
-            cutoff_time = datetime.now() - timedelta(hours=hours)
+            current_time = datetime.now()
             
-            # Note: In a real SQL database, you'd use a WHERE clause
-            # For the mock database, we need to fetch and filter manually
+            # Get all cache entries
             response = supabase.table("distance_cache").select("*").execute()
             
             cleanup_count = 0
             if response.data:
                 for entry in response.data:
-                    calculated_at = datetime.fromisoformat(entry["calculated_at"].replace("Z", "+00:00"))
-                    if calculated_at < cutoff_time:
+                    should_delete = False
+                    
+                    # Check expires_at field first
+                    if "expires_at" in entry and entry["expires_at"]:
+                        try:
+                            # Handle different datetime formats
+                            expires_at_str = entry["expires_at"]
+                            if expires_at_str.endswith('+00:00'):
+                                expires_at_str = expires_at_str.replace('+00:00', 'Z')
+                            
+                            # Parse the datetime string, handling potential microsecond precision issues
+                            if '.' in expires_at_str and expires_at_str.endswith('Z'):
+                                # Split on '.' and ensure microseconds are exactly 6 digits
+                                date_part, time_part = expires_at_str.split('.')
+                                microseconds = time_part.rstrip('Z')
+                                # Truncate or pad microseconds to 6 digits
+                                microseconds = microseconds[:6].ljust(6, '0')
+                                expires_at_str = f"{date_part}.{microseconds}Z"
+                            
+                            expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
+                            if current_time.replace(tzinfo=expires_at.tzinfo) > expires_at:
+                                should_delete = True
+                        except (ValueError, TypeError) as e:
+                            logger.warning(f"Could not parse expires_at field: {e}")
+                            # Fallback to created_at + hours
+                            created_at = datetime.fromisoformat(entry["created_at"].replace("Z", "+00:00"))
+                            cutoff_time = current_time - timedelta(hours=hours)
+                            if created_at.replace(tzinfo=None) < cutoff_time:
+                                should_delete = True
+                    else:
+                        # Fallback to created_at + hours
+                        created_at = datetime.fromisoformat(entry["created_at"].replace("Z", "+00:00"))
+                        cutoff_time = current_time - timedelta(hours=hours)
+                        if created_at.replace(tzinfo=None) < cutoff_time:
+                            should_delete = True
+                    
+                    if should_delete:
                         supabase.table("distance_cache").delete().eq("id", entry["id"]).execute()
                         cleanup_count += 1
             
@@ -218,7 +288,7 @@ def calculate_and_cache_distance(user_id: str, event_id: str, event_location: st
                 "distance_value": cached_result["distance_value"],
                 "duration_value": cached_result["duration_value"],
                 "cached": True,
-                "calculated_at": cached_result["calculated_at"]
+                "expires_at": cached_result.get("expires_at")
             }
         
         # Get user profile for address
@@ -253,7 +323,7 @@ def calculate_and_cache_distance(user_id: str, event_id: str, event_location: st
             "distance_value": distance_result["distance"]["value"],
             "duration_value": distance_result["duration"]["value"],
             "cached": False,
-            "calculated_at": datetime.now().isoformat()
+            "expires_at": (datetime.now() + timedelta(days=7)).isoformat()
         }
         
     except Exception as e:

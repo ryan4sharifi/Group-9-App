@@ -35,7 +35,7 @@ class CachedDistanceResponse(BaseModel):
     distance_value: int
     duration_value: int
     cached: bool
-    calculated_at: str
+    expires_at: Optional[str] = None
 
 class EventWithDistanceResponse(BaseModel):
     id: str

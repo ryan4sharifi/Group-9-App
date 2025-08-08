@@ -43,6 +43,7 @@ import DistanceDisplay from '../components/distance/DistanceDisplay';
 import DistanceFilter from '../components/distance/DistanceFilter';
 import { 
   addDistanceToEvents, 
+  getDistanceToEvent,
   sortEventsByDistance, 
   filterEventsByDistance 
 } from '../utils/distance';
@@ -124,9 +125,13 @@ const EventsPage: React.FC = () => {
   // Add distance information when userLocation becomes available
   useEffect(() => {
     if (userLocation && userId && events.length > 0) {
-      addDistanceInfo(events);
+      // Only add distance info if events don't already have distance data
+      const hasDistanceData = events.some(event => event.distance_value !== undefined);
+      if (!hasDistanceData) {
+        addDistanceInfo(events);
+      }
     }
-  }, [userLocation, userId, events.length]);
+  }, [userLocation, userId]);
 
   const getFullAddress = (event: Event) => {
     const parts = [
@@ -161,9 +166,14 @@ const EventsPage: React.FC = () => {
     try {
       const response = await axios.get('http://localhost:8000/api/events');
       const eventsData = response.data;
+      
+      // Set events immediately for progressive loading
       setEvents(eventsData);
       
-      // Note: Distance information will be added via useEffect when userLocation is available
+      // Add distance information progressively if user location is available
+      if (userLocation && userId) {
+        addDistanceInfo(eventsData);
+      }
     } catch (err) {
       console.error('Error fetching events:', err);
       setError('Failed to fetch events');
@@ -181,8 +191,39 @@ const EventsPage: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      const eventsWithDistance = await addDistanceToEvents(eventsData, token);
-      setEvents(eventsWithDistance);
+      // Add distance information progressively - each event updates as calculation completes
+      const updatedEvents = [...eventsData];
+      
+      // Process events in parallel but update UI as each completes
+      await Promise.allSettled(
+        eventsData.map(async (event, index) => {
+          try {
+            const distanceData = await getDistanceToEvent(event.id, token);
+            if (distanceData) {
+              updatedEvents[index] = {
+                ...event,
+                distance_text: distanceData.distance_text,
+                duration_text: distanceData.duration_text,
+                distance_value: distanceData.distance_value,
+                duration_value: distanceData.duration_value,
+                distance_cached: distanceData.cached,
+              };
+              
+              // Update state immediately as each distance is calculated
+              setEvents(prevEvents => {
+                const newEvents = [...prevEvents];
+                const eventIndex = newEvents.findIndex(e => e.id === event.id);
+                if (eventIndex !== -1) {
+                  newEvents[eventIndex] = updatedEvents[index];
+                }
+                return newEvents;
+              });
+            }
+          } catch (err) {
+            console.error(`Error calculating distance for event ${event.id}:`, err);
+          }
+        })
+      );
     } catch (err) {
       console.error('Error adding distance information:', err);
     } finally {
@@ -383,7 +424,7 @@ const EventsPage: React.FC = () => {
           <Box display="flex" alignItems="center" gap={2}>
             <CircularProgress size={20} />
             <Typography variant="body2">
-              Calculating distances to events...
+              Calculating distances to events... Events will update with distance information as calculations complete.
             </Typography>
           </Box>
         </Alert>

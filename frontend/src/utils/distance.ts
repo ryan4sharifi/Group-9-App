@@ -9,7 +9,7 @@ export interface DistanceData {
   distance_value: number;
   duration_value: number;
   cached: boolean;
-  calculated_at: string;
+  expires_at?: string;
 }
 
 export interface EventWithDistance {
