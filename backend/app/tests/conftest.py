@@ -13,7 +13,8 @@ def mock_supabase_client():
          patch('app.routes.events.supabase', autospec=True) as mock_events_supabase, \
          patch('app.routes.history.supabase', autospec=True) as mock_history_supabase, \
          patch('app.routes.match.supabase', autospec=True) as mock_match_supabase, \
-         patch('app.routes.notifications.supabase', autospec=True) as mock_notifications_supabase:
+         patch('app.routes.notifications.supabase', autospec=True) as mock_notifications_supabase, \
+         patch('app.routes.distance.supabase', autospec=True) as mock_distance_supabase:
         
         # Configure one mock and use it for all paths
         mock_table = MagicMock()
@@ -39,7 +40,7 @@ def mock_supabase_client():
         # Copy the same configuration to all other mock instances
         for mock_sb in [mock_auth_supabase, mock_profile_supabase, 
                        mock_events_supabase, mock_history_supabase, mock_match_supabase, 
-                       mock_notifications_supabase]:
+                       mock_notifications_supabase, mock_distance_supabase]:
             mock_sb.table.return_value = mock_table
 
         # --- IMPORTANT: Configure .execute(), .single().execute(), .maybe_single().execute() ---
@@ -75,3 +76,12 @@ def hashed_password():
 def mock_uuid():
     # Use a real UUID string to satisfy type checks in backend
     return "123e4567-e89b-12d3-a456-426614174000"
+
+# Fixture for mocking authentication
+@pytest.fixture
+def mock_current_user():
+    return {"user_id": "123e4567-e89b-12d3-a456-426614174000", "role": "volunteer"}
+
+@pytest.fixture
+def mock_admin_user():
+    return {"user_id": "admin-123e4567-e89b-12d3-a456-426614174000", "role": "admin"}
