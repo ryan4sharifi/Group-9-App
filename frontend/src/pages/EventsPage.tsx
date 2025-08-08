@@ -6,7 +6,6 @@ import {
   TextField,
   Button,
   Paper,
-  MenuItem,
   Stack,
   Chip,
   Alert,
@@ -22,6 +21,7 @@ import {
   useTheme,
   useMediaQuery,
   CircularProgress,
+  MenuItem,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -557,7 +557,12 @@ const EventsPage: React.FC = () => {
       </Box>
 
       {/* Create/Edit Event Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleCloseDialog} 
+        maxWidth="md" 
+        fullWidth
+      >
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h6">
