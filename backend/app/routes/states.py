@@ -30,8 +30,6 @@ async def get_state_by_code(state_code: str):
             raise HTTPException(status_code=404, detail="State not found")
         return response.data
     except Exception as e:
-        if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail="State not found")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve state: {str(e)}")
 
 # Initialize states table with US states data (Admin function)

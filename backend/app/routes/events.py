@@ -51,6 +51,8 @@ async def get_event_by_id(event_id: str):
         if not response.data:
             raise HTTPException(status_code=404, detail="Event not found")
         return response.data
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -91,5 +93,7 @@ async def delete_event(event_id: str, user_id: str):
 
         return {"message": "Event deleted and users notified"}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

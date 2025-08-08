@@ -104,14 +104,14 @@ def test_event_participation_summary_success(mock_supabase_client: MagicMock):
     response = client.get("/api/reports/events", headers=headers)
 
     assert response.status_code == 200
-    # The actual route returns "event_reports", not "event_summary"
-    assert "event_reports" in response.json()
-    event_reports = response.json()["event_reports"]
-    assert isinstance(event_reports, list)
-    if len(event_reports) >= 1:
-        # Check that reports have the expected structure
-        assert "event_id" in event_reports[0]
-        assert "event_name" in event_reports[0]
-        assert "total_volunteers" in event_reports[0]
-        assert "attended_volunteers" in event_reports[0]
-        assert "attendance_rate" in event_reports[0]
+    # The actual route returns "event_summary"
+    assert "event_summary" in response.json()
+    event_summary = response.json()["event_summary"]
+    assert isinstance(event_summary, list)
+    if len(event_summary) >= 1:
+        # Check that summary has the expected structure
+        assert "event_id" in event_summary[0]
+        assert "name" in event_summary[0]
+        assert "date" in event_summary[0]
+        assert "full_address" in event_summary[0]
+        assert "volunteer_count" in event_summary[0]
